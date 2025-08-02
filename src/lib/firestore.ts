@@ -89,13 +89,21 @@ function findBestChoiceMatch(answer: string, choices: string[]): string | null {
   return null; // No good match found
 }
 
-// AI-powered question generation
+// AI-powered Jeopardy!-style clue generation
 export async function generateQuestionsWithAI(
   topic: string,
   count: number = 10
 ): Promise<QuestionUpload[]> {
   try {
-    const prompt = `Given the theme: "${topic}", generate ${count} trivia questions with PROGRESSIVE DIFFICULTY. Each question must have exactly 3 tags, ordered from broad to specific:
+    const prompt = `Given the theme: "${topic}", generate ${count} JEOPARDY!-STYLE clues with PROGRESSIVE DIFFICULTY. Each clue must have exactly 3 tags, ordered from broad to specific:
+
+🎯 JEOPARDY! STYLE REQUIREMENTS (CRITICAL):
+- Write CLUES, not questions - contestants respond with questions
+- Start with factual statements, end with periods (never question marks)
+- Use "This [person/place/thing]..." format for specificity
+- Keep clues brief and punchy (10-20 words max)
+- Include context hints, dates, or wordplay when possible
+- Tone should be academic but playful, trivia-forward but not dry
 
 📈 DIFFICULTY PROGRESSION (CRITICAL):
 - Question 1: EASY - General knowledge that most people would know
@@ -110,15 +118,31 @@ export async function generateQuestionsWithAI(
 - Second tag: Sub-topic within the first (American History, Physics, TV Shows, Basketball, etc.)
 - Third tag: Narrow detail or specific angle (Presidential Elections, Newtonian Mechanics, Sitcoms from the 90s, NBA Records, etc.)
 
-✅ Difficulty Examples for "Marvel Movies":
-- Easy (Q1): "Who plays Iron Man in the Marvel movies?" 
-- Intermediate (Q5): "What is the name of Thor's hammer?"
-- Expert (Q10): "In which comic issue did the Winter Soldier first appear?"
+✅ JEOPARDY! STYLE EXAMPLES for "${topic}":
+- Easy (Q1): "This city on the Seine is the capital of France." → What is Paris?
+- Intermediate (Q5): "This Norse god wields a hammer named Mjolnir." → Who is Thor?
+- Expert (Q10): "This 1969 comic issue introduced Bucky Barnes as the Winter Soldier." → What is Captain America #110?
+
+🧠 JEOPARDY! WRITING RULES:
+✅ DO:
+- Start with "This [person/place/thing]..." or factual statements
+- Use specific nouns, dates, or context clues
+- Include wordplay, puns, or clever associations when possible
+- Keep clues concise and fact-packed
+- End with periods, never question marks
+- Make the expected answer a specific noun phrase
+
+❌ DON'T:
+- Ask direct questions ("What is...?", "Who is...?")
+- Include the answer directly in the clue text
+- Make clues too long or verbose
+- Use subjective or opinion-based statements
+- End with question marks
 
 Requirements:
-- Each question must have exactly 4 multiple choice options
-- Each question must have exactly 3 tags
-- Tags must be unique within each question
+- Each clue must have exactly 4 multiple choice options
+- Each clue must have exactly 3 tags
+- Tags must be unique within each clue
 - Tags must be descriptive but concise
 - Tags must follow the hierarchy: broad → subcategory → specific
 - DIFFICULTY MUST SCALE: Start easy, end expert
@@ -128,16 +152,10 @@ Requirements:
 - The "answer" field must EXACTLY match the first choice in the "choices" array
 - Do not provide explanatory text or additional information as the answer - only use the exact text from the first choice
 
-🧠 AVOID OBVIOUS ANSWERS: 
-- Do NOT include the answer directly in the question text (e.g., asking about "Cold War games" with "Cold War" as an answer choice)
-- Ensure all 4 choices are plausible and require actual knowledge to distinguish
-- Avoid questions where the answer can be deduced purely from keywords in the question
-- Make sure wrong answers are believable alternatives, not obviously incorrect options
-
 💡 DIFFICULTY SCALING TIPS:
-- EASY questions: Mainstream knowledge, famous facts, widely known information
-- INTERMEDIATE questions: Specific details, dates, lesser-known but not obscure facts
-- EXPERT questions: Deep trivia, technical details, historical minutiae, insider knowledge
+- EASY clues: Mainstream knowledge, famous facts, widely known information
+- INTERMEDIATE clues: Specific details, dates, lesser-known but not obscure facts
+- EXPERT clues: Deep trivia, technical details, historical minutiae, insider knowledge
 - All wrong answers should be plausible for the difficulty level
 
 ⚠️ IMPORTANT: Return ONLY the JSON array, no markdown formatting, no code blocks, no additional text.
@@ -145,7 +163,7 @@ Requirements:
 Output in JSON format with this exact structure (note: correct answer is ALWAYS first choice):
 [
   {
-    "question": "What is the capital of France?",
+    "question": "This city on the Seine is the capital of France.",
     "choices": ["Paris", "London", "Berlin", "Madrid"],
     "answer": "Paris",
     "tags": ["Geography", "Europe", "Capitals"]
@@ -178,19 +196,19 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
     let questions: QuestionUpload[];
     try {
       questions = JSON.parse(cleanedContent) as QuestionUpload[];
-      console.log('✅ Successfully parsed', questions.length, 'questions from AI');
+      console.log('✅ Successfully parsed', questions.length, 'Jeopardy!-style clues from AI');
       
-      // Validate the questions structure
+      // Validate the clues structure
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
         if (!q.question || !q.choices || !q.answer || !q.tags) {
-          throw new Error(`Question ${i + 1} is missing required fields (question, choices, answer, tags)`);
+          throw new Error(`Clue ${i + 1} is missing required fields (question, choices, answer, tags)`);
         }
         if (!Array.isArray(q.choices) || q.choices.length !== 4) {
-          throw new Error(`Question ${i + 1} must have exactly 4 choices`);
+          throw new Error(`Clue ${i + 1} must have exactly 4 choices`);
         }
         if (!Array.isArray(q.tags) || q.tags.length !== 3) {
-          throw new Error(`Question ${i + 1} must have exactly 3 tags`);
+          throw new Error(`Clue ${i + 1} must have exactly 3 tags`);
         }
         // Ensure correct answer is always first choice
         if (q.answer !== q.choices[0]) {
