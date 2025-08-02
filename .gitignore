@@ -25,8 +25,21 @@ dist-ssr
 
 # Secrets and service account keys
 secrets/
+# Exclude JSON files that might contain secrets, but allow specific config files
 *.json
 !.vscode/extensions.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node.json
+!tailwind.config.js
+!postcss.config.js
+!vite.config.ts
+!eslint.config.js
+!firebase.json
+!firestore.rules
+!firestore.indexes.json
 
 # Environment variables
 .env
