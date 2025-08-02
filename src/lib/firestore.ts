@@ -105,6 +105,14 @@ export async function generateQuestionsWithAI(
 - Include context hints, dates, or wordplay when possible
 - Tone should be academic but playful, trivia-forward but not dry
 
+🚨 CRITICAL: NEVER USE QUESTION FORMAT
+- ❌ WRONG: "What industry did Andrew Carnegie make his fortune in?"
+- ❌ WRONG: "Who plays Iron Man in the Marvel movies?"
+- ❌ WRONG: "Where is the capital of France located?"
+- ✅ CORRECT: "Andrew Carnegie made his fortune in this industry."
+- ✅ CORRECT: "This actor plays Iron Man in the Marvel movies."
+- ✅ CORRECT: "This city on the Seine is the capital of France."
+
 📈 DIFFICULTY PROGRESSION (CRITICAL):
 - Question 1: EASY - General knowledge that most people would know
 - Question 2-3: BEGINNER - Basic facts that casual fans might know  
@@ -123,6 +131,12 @@ export async function generateQuestionsWithAI(
 - Intermediate (Q5): "This Norse god wields a hammer named Mjolnir." → Who is Thor?
 - Expert (Q10): "This 1969 comic issue introduced Bucky Barnes as the Winter Soldier." → What is Captain America #110?
 
+🎯 MORE EXAMPLES OF CORRECT JEOPARDY! FORMAT:
+- "This steel magnate made his fortune in the late 19th century." → Who is Andrew Carnegie?
+- "This 1994 film features a bus that must stay above 50 miles per hour." → What is Speed?
+- "This Greek goddess of wisdom sprang fully grown from Zeus's head." → Who is Athena?
+- "This 1969 event saw Neil Armstrong take one small step for man." → What is the Moon landing?
+
 🧠 JEOPARDY! WRITING RULES:
 ✅ DO:
 - Start with "This [person/place/thing]..." or factual statements
@@ -131,13 +145,16 @@ export async function generateQuestionsWithAI(
 - Keep clues concise and fact-packed
 - End with periods, never question marks
 - Make the expected answer a specific noun phrase
+- Use "this" to refer to the answer (e.g., "this industry", "this actor", "this city")
 
 ❌ DON'T:
-- Ask direct questions ("What is...?", "Who is...?")
+- Ask direct questions ("What is...?", "Who is...?", "Where is...?")
+- Use question words in the clue ("what", "who", "where", "when", "why", "how")
 - Include the answer directly in the clue text
 - Make clues too long or verbose
 - Use subjective or opinion-based statements
 - End with question marks
+- Tell contestants how to answer (e.g., "what industry" tells them to say "What is...")
 
 Requirements:
 - Each clue must have exactly 4 multiple choice options
@@ -168,7 +185,9 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
     "answer": "Paris",
     "tags": ["Geography", "Europe", "Capitals"]
   }
-]`;
+]
+
+🚨 FINAL REMINDER: Every clue must be a STATEMENT, never a question. Use "this" to refer to the answer, not question words like "what", "who", "where".`;
 
     const response = await geminiAI.generateContent(prompt);
     const content = response.text;
@@ -239,9 +258,22 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
             }
           }
         }
+        
+        // Validate Jeopardy! format - ensure clues are statements, not questions
+        const questionText = q.question.trim();
+        const questionWords = ['what', 'who', 'where', 'when', 'why', 'how', 'which'];
+        const hasQuestionWord = questionWords.some(word => 
+          questionText.toLowerCase().includes(word + ' ')
+        );
+        const endsWithQuestionMark = questionText.endsWith('?');
+        
+        if (hasQuestionWord || endsWithQuestionMark) {
+          console.warn(`⚠️  Clue ${i + 1} is in question format instead of Jeopardy! statement format: "${questionText}"`);
+          console.warn(`   Should be a statement like "This [person/place/thing]..." not "What/Who/Where..."`);
+        }
       }
       
-      console.log('✅ Questions validated successfully');
+      console.log('✅ Clues validated successfully');
     } catch (parseError) {
       console.error('❌ JSON Parse Error:', parseError);
       console.error('🔍 Content that failed to parse:', cleanedContent);
