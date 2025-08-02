@@ -1,0 +1,540 @@
+import { 
+  doc, 
+  writeBatch, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  getDoc,
+  orderBy
+} from 'firebase/firestore';
+import { db, auth } from './firebase';
+import { geminiAI } from './firebase';
+
+// Authentication helper
+export async function ensureAuthenticated(): Promise<void> {
+  if (!auth.currentUser) {
+    throw new Error('Authentication required to access database. Please sign in.');
+  }
+  console.log('User authenticated:', auth.currentUser.email);
+}
+
+// Types
+export interface FirestoreQuestion {
+  id: string;
+  question: string;
+  choices: string[]; // NOTE: Correct answer is ALWAYS at index 0
+  answer: string;    // Must match choices[0]
+  date: string;
+  difficulty: number; // 1-10 scale: 1=easy, 10=expert (based on question position)
+  lastUsed: string;
+  tags: string[];
+}
+
+export interface QuestionUpload {
+  question: string;
+  choices: string[]; // NOTE: Correct answer is ALWAYS at index 0
+  answer: string;    // Must match choices[0]
+  date: string;
+  tags: string[];
+}
+
+export interface QuestionStats {
+  totalQuestions: number;
+  averageDifficulty: number;
+  difficultyDistribution: {
+    easy: number;
+    medium: number;
+    hard: number;
+    expert: number;
+  };
+}
+
+// Helper function to find the best matching choice for an AI-generated answer
+function findBestChoiceMatch(answer: string, choices: string[]): string | null {
+  const lowerAnswer = answer.toLowerCase().trim();
+  
+  // 1. Exact match (case-insensitive)
+  for (const choice of choices) {
+    if (choice.toLowerCase().trim() === lowerAnswer) {
+      return choice;
+    }
+  }
+  
+  // 2. Partial match - answer contains choice or vice versa
+  for (const choice of choices) {
+    const lowerChoice = choice.toLowerCase().trim();
+    if (lowerAnswer.includes(lowerChoice) || lowerChoice.includes(lowerAnswer)) {
+      return choice;
+    }
+  }
+  
+  // 3. Word matching - check if any significant words from the answer appear in choices
+  const answerWords = lowerAnswer.split(/\s+/).filter(word => word.length > 2); // Ignore short words
+  for (const choice of choices) {
+    const lowerChoice = choice.toLowerCase();
+    for (const word of answerWords) {
+      if (lowerChoice.includes(word)) {
+        return choice;
+      }
+    }
+  }
+  
+  // 4. Check for common patterns that indicate no match
+  // If answer suggests "none" or "not applicable", return null to use fallback
+  if (lowerAnswer.includes('not') || lowerAnswer.includes('none') || lowerAnswer.includes('neither')) {
+    return null;
+  }
+  
+  return null; // No good match found
+}
+
+// AI-powered question generation
+export async function generateQuestionsWithAI(
+  topic: string,
+  count: number = 10
+): Promise<QuestionUpload[]> {
+  try {
+    const prompt = `Given the theme: "${topic}", generate ${count} trivia questions with PROGRESSIVE DIFFICULTY. Each question must have exactly 3 tags, ordered from broad to specific:
+
+📈 DIFFICULTY PROGRESSION (CRITICAL):
+- Question 1: EASY - General knowledge that most people would know
+- Question 2-3: BEGINNER - Basic facts that casual fans might know  
+- Question 4-6: INTERMEDIATE - Requires some knowledge of the topic
+- Question 7-8: ADVANCED - For people well-versed in the subject
+- Question 9: EXPERT - Very challenging, specialist knowledge
+- Question 10: MASTER - Only true experts/enthusiasts would know this
+
+🏷️ Tag Hierarchy Principle:
+- First tag: Very general category (History, Science, Pop Culture, Sports, etc.)
+- Second tag: Sub-topic within the first (American History, Physics, TV Shows, Basketball, etc.)
+- Third tag: Narrow detail or specific angle (Presidential Elections, Newtonian Mechanics, Sitcoms from the 90s, NBA Records, etc.)
+
+✅ Difficulty Examples for "Marvel Movies":
+- Easy (Q1): "Who plays Iron Man in the Marvel movies?" 
+- Intermediate (Q5): "What is the name of Thor's hammer?"
+- Expert (Q10): "In which comic issue did the Winter Soldier first appear?"
+
+Requirements:
+- Each question must have exactly 4 multiple choice options
+- Each question must have exactly 3 tags
+- Tags must be unique within each question
+- Tags must be descriptive but concise
+- Tags must follow the hierarchy: broad → subcategory → specific
+- DIFFICULTY MUST SCALE: Start easy, end expert
+
+⚠️ CRITICAL FORMATTING REQUIREMENTS:
+- The correct answer must ALWAYS be the FIRST choice in the "choices" array (index 0)
+- The "answer" field must EXACTLY match the first choice in the "choices" array
+- Do not provide explanatory text or additional information as the answer - only use the exact text from the first choice
+
+🧠 AVOID OBVIOUS ANSWERS: 
+- Do NOT include the answer directly in the question text (e.g., asking about "Cold War games" with "Cold War" as an answer choice)
+- Ensure all 4 choices are plausible and require actual knowledge to distinguish
+- Avoid questions where the answer can be deduced purely from keywords in the question
+- Make sure wrong answers are believable alternatives, not obviously incorrect options
+
+💡 DIFFICULTY SCALING TIPS:
+- EASY questions: Mainstream knowledge, famous facts, widely known information
+- INTERMEDIATE questions: Specific details, dates, lesser-known but not obscure facts
+- EXPERT questions: Deep trivia, technical details, historical minutiae, insider knowledge
+- All wrong answers should be plausible for the difficulty level
+
+⚠️ IMPORTANT: Return ONLY the JSON array, no markdown formatting, no code blocks, no additional text.
+
+Output in JSON format with this exact structure (note: correct answer is ALWAYS first choice):
+[
+  {
+    "question": "What is the capital of France?",
+    "choices": ["Paris", "London", "Berlin", "Madrid"],
+    "answer": "Paris",
+    "tags": ["Geography", "Europe", "Capitals"]
+  }
+]`;
+
+    const response = await geminiAI.generateContent(prompt);
+    const content = response.text;
+    
+    if (!content) {
+      throw new Error('No content generated from AI');
+    }
+
+    console.log('🤖 Raw AI Response:', content);
+    console.log('📝 Response preview:', content.substring(0, 200) + '...');
+
+    // Clean the JSON response by removing markdown code blocks
+    let cleanedContent = content.trim();
+    
+    // Remove ```json and ``` markers if present
+    if (cleanedContent.startsWith('```json')) {
+      cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('🧹 Cleaned JSON for parsing:', cleanedContent.substring(0, 200) + '...');
+
+    // Parse the JSON response
+    let questions: QuestionUpload[];
+    try {
+      questions = JSON.parse(cleanedContent) as QuestionUpload[];
+      console.log('✅ Successfully parsed', questions.length, 'questions from AI');
+      
+      // Validate the questions structure
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.question || !q.choices || !q.answer || !q.tags) {
+          throw new Error(`Question ${i + 1} is missing required fields (question, choices, answer, tags)`);
+        }
+        if (!Array.isArray(q.choices) || q.choices.length !== 4) {
+          throw new Error(`Question ${i + 1} must have exactly 4 choices`);
+        }
+        if (!Array.isArray(q.tags) || q.tags.length !== 3) {
+          throw new Error(`Question ${i + 1} must have exactly 3 tags`);
+        }
+        // Ensure correct answer is always first choice
+        if (q.answer !== q.choices[0]) {
+          console.warn(`⚠️  Question ${i + 1}: answer "${q.answer}" is not the first choice`);
+          
+          // Find the correct answer in the choices and move it to first position
+          const correctAnswerIndex = q.choices.findIndex(choice => choice === q.answer);
+          if (correctAnswerIndex > 0) {
+            console.log(`🔧 Moving correct answer to first position for Question ${i + 1}`);
+            // Move correct answer to front
+            const correctAnswer = q.choices[correctAnswerIndex];
+            q.choices.splice(correctAnswerIndex, 1);
+            q.choices.unshift(correctAnswer);
+            q.answer = q.choices[0]; // Update answer to match first choice
+          } else if (correctAnswerIndex === -1) {
+            // Answer not found in choices - try fuzzy matching
+            const bestMatch = findBestChoiceMatch(q.answer, q.choices);
+            if (bestMatch) {
+              console.log(`🔧 Auto-correcting and moving answer for Question ${i + 1}: "${q.answer}" → "${bestMatch}"`);
+              const matchIndex = q.choices.findIndex(choice => choice === bestMatch);
+              q.choices.splice(matchIndex, 1);
+              q.choices.unshift(bestMatch);
+              q.answer = bestMatch;
+            } else {
+              // Fallback: use first choice as answer (already in correct position)
+              console.log(`🔧 Fallback for Question ${i + 1}: Using first choice "${q.choices[0]}" as answer`);
+              q.answer = q.choices[0];
+            }
+          }
+        }
+      }
+      
+      console.log('✅ Questions validated successfully');
+    } catch (parseError) {
+      console.error('❌ JSON Parse Error:', parseError);
+      console.error('🔍 Content that failed to parse:', cleanedContent);
+      throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+    }
+    
+    // Add the current date to all questions
+    const today = new Date().toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
+
+    return questions.map(q => ({
+      ...q,
+      date: today
+    }));
+  } catch (error) {
+    console.error('Error generating questions with AI:', error);
+    throw new Error('Failed to generate questions with AI');
+  }
+}
+
+// Upload daily questions
+export async function uploadDailyQuestions(
+  questions: QuestionUpload[], 
+  targetDate: string
+): Promise<string> {
+  try {
+    const batch = writeBatch(db);
+    
+    // Validate we have exactly 10 questions
+    if (questions.length !== 10) {
+      throw new Error(`Expected 10 questions, got ${questions.length}`);
+    }
+    
+    // Validate date format
+    const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+    if (!dateRegex.test(targetDate)) {
+      throw new Error("Date must be in MM-DD-YYYY format");
+    }
+    
+    // Check if questions already exist for this date
+    const existingQuestions = await getQuestionsByDate(targetDate);
+    if (existingQuestions.length > 0) {
+      throw new Error(`Questions already exist for ${targetDate}. Please choose a different date.`);
+    }
+    
+    // Validate each question before processing
+    questions.forEach((questionData, index) => {
+      try {
+        validateQuestion(questionData);
+      } catch (error) {
+        throw new Error(`Question ${index + 1}: ${error instanceof Error ? error.message : 'Invalid question'}`);
+      }
+    });
+    
+    // Process each question
+    questions.forEach((questionData, index) => {
+      const questionId = `${targetDate}-q${index}`;
+      
+      // Create the question document
+      const questionDocRef = doc(db, 'questions', questionId);
+      const firestoreQuestion: FirestoreQuestion = {
+        id: questionId,
+        question: questionData.question,
+        choices: questionData.choices,
+        answer: questionData.answer,
+        date: targetDate,
+        difficulty: index + 1, // Questions 1-10 based on position (1=easy, 10=expert)
+        lastUsed: "", // Empty for new questions
+        tags: questionData.tags
+      };
+      
+      batch.set(questionDocRef, firestoreQuestion);
+      
+      // Add to tag subcollections
+      questionData.tags.forEach(tag => {
+        const tagQuestionsRef = collection(db, 'tags', tag, 'questions');
+        const tagQuestionDocRef = doc(tagQuestionsRef, questionId);
+        batch.set(tagQuestionDocRef, { questionId });
+      });
+    });
+    
+    await batch.commit();
+    return `Successfully uploaded ${questions.length} questions for ${targetDate}`;
+  } catch (error) {
+    console.error("Error uploading questions:", error);
+    
+    // Handle specific Firebase errors
+    if (error instanceof Error) {
+      if (error.message.includes('permission-denied')) {
+        throw new Error('Admin access required to upload questions. Please check your permissions.');
+      }
+      if (error.message.includes('unavailable')) {
+        throw new Error('Database temporarily unavailable. Please try again.');
+      }
+      throw error;
+    }
+    
+    throw new Error('Failed to upload questions. Please try again.');
+  }
+}
+
+// Validation function
+export function validateQuestion(question: QuestionUpload): void {
+  if (!question.question || question.question.trim().length === 0) {
+    throw new Error("Question text is required");
+  }
+  
+  if (!question.choices || question.choices.length !== 4) {
+    throw new Error("Question must have exactly 4 choices");
+  }
+  
+  if (question.answer !== question.choices[0]) {
+    throw new Error("Answer must match the first choice");
+  }
+  
+  if (!question.tags || question.tags.length !== 3) {
+    throw new Error("Question must have exactly 3 tags (broad → subcategory → specific)");
+  }
+  
+  // Check for unique tags within the question
+  const uniqueTags = new Set(question.tags.filter(tag => tag.trim()));
+  if (uniqueTags.size !== 3) {
+    throw new Error("Question must have 3 unique tags");
+  }
+  
+  const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+  if (!dateRegex.test(question.date)) {
+    throw new Error("Date must be in MM-DD-YYYY format");
+  }
+}
+
+// Read operations
+export async function getQuestionsByDate(date: string): Promise<FirestoreQuestion[]> {
+  try {
+    console.log('Checking questions for date:', date);
+    
+    // Ensure we're authenticated
+    await ensureAuthenticated();
+    
+    const questionsRef = collection(db, 'questions');
+    const q = query(questionsRef, where('date', '==', date));
+    const snapshot = await getDocs(q);
+    
+    console.log('Found', snapshot.docs.length, 'questions for date', date);
+    const questions = snapshot.docs.map(doc => {
+      const data = doc.data() as FirestoreQuestion;
+      console.log('Question ID:', doc.id, 'Date:', data.date);
+      return data;
+    });
+    
+    return questions;
+  } catch (error) {
+    console.error('Error fetching questions by date:', error);
+    throw error;
+  }
+}
+
+export async function checkDateAvailability(date: string): Promise<{ available: boolean; questionCount: number }> {
+  try {
+    console.log('Checking date availability for:', date);
+    const questions = await getQuestionsByDate(date);
+    const result = {
+      available: questions.length < 10,
+      questionCount: questions.length
+    };
+    console.log('Date availability result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error checking date availability:', error);
+    return {
+      available: false,
+      questionCount: 0
+    };
+  }
+}
+
+export async function findNextAvailableDate(startDate?: Date): Promise<string> {
+  const start = startDate || new Date();
+  let checkDate = new Date(start);
+  
+  // Check the next 30 days for availability
+  for (let i = 0; i < 30; i++) {
+    const dateStr = checkDate.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
+    
+    const { available } = await checkDateAvailability(dateStr);
+    if (available) {
+      return dateStr;
+    }
+    
+    checkDate.setDate(checkDate.getDate() + 1);
+  }
+  
+  // If no available date found, return today's date
+  return start.toLocaleDateString('en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
+}
+
+export async function getAllQuestions(): Promise<FirestoreQuestion[]> {
+  try {
+    console.log('Fetching all questions...');
+    
+    // Ensure we're authenticated
+    await ensureAuthenticated();
+    
+    const questionsRef = collection(db, 'questions');
+    const q = query(questionsRef, orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
+    
+    console.log('Total questions found:', snapshot.docs.length);
+    return snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
+  } catch (error) {
+    console.error('Error fetching all questions:', error);
+    throw error;
+  }
+}
+
+export async function getQuestionsByTag(tag: string): Promise<FirestoreQuestion[]> {
+  const tagQuestionsRef = collection(db, 'tags', tag, 'questions');
+  const snapshot = await getDocs(tagQuestionsRef);
+  
+  const questionIds = snapshot.docs.map(doc => doc.data().questionId);
+  
+  // Fetch the actual question documents
+  const questions = await Promise.all(
+    questionIds.map(async (id) => {
+      const questionDoc = await getDoc(doc(db, 'questions', id));
+      return questionDoc.data() as FirestoreQuestion;
+    })
+  );
+  
+  return questions;
+}
+
+export async function getAvailableTags(): Promise<string[]> {
+  const tagsRef = collection(db, 'tags');
+  const snapshot = await getDocs(tagsRef);
+  
+  return snapshot.docs.map(doc => doc.id);
+}
+
+// Statistics
+export async function getQuestionStatistics(): Promise<QuestionStats> {
+  const questions = await getAllQuestions();
+  
+  const difficulties = questions.map(q => q.difficulty);
+  const averageDifficulty = difficulties.reduce((a, b) => a + b, 0) / difficulties.length;
+  
+  const distribution = {
+    easy: difficulties.filter(d => d <= 25).length,
+    medium: difficulties.filter(d => d > 25 && d <= 50).length,
+    hard: difficulties.filter(d => d > 50 && d <= 75).length,
+    expert: difficulties.filter(d => d > 75).length
+  };
+  
+  return {
+    totalQuestions: questions.length,
+    averageDifficulty: Math.round(averageDifficulty * 10) / 10,
+    difficultyDistribution: distribution
+  };
+}
+
+// Search questions
+export async function searchQuestions(
+  searchTerm: string,
+  filters?: {
+    tags?: string[];
+    dateRange?: { start: string; end: string };
+    difficultyRange?: { min: number; max: number };
+  }
+): Promise<FirestoreQuestion[]> {
+  let questions = await getAllQuestions();
+  
+  // Text search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    questions = questions.filter(q => 
+      q.question.toLowerCase().includes(term) ||
+      q.answer.toLowerCase().includes(term) ||
+      q.tags.some(tag => tag.toLowerCase().includes(term))
+    );
+  }
+  
+  // Apply filters
+  if (filters?.tags?.length) {
+    questions = questions.filter(q => 
+      filters.tags!.some(tag => q.tags.includes(tag))
+    );
+  }
+  
+  if (filters?.dateRange) {
+    questions = questions.filter(q => 
+      q.date >= filters.dateRange!.start && q.date <= filters.dateRange!.end
+    );
+  }
+  
+  if (filters?.difficultyRange) {
+    questions = questions.filter(q => 
+      q.difficulty >= filters.difficultyRange!.min && 
+      q.difficulty <= filters.difficultyRange!.max
+    );
+  }
+  
+  return questions;
+} 
