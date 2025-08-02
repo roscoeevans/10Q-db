@@ -163,6 +163,7 @@ Requirements:
 - Tags must be descriptive but concise
 - Tags must follow the hierarchy: broad → subcategory → specific
 - DIFFICULTY MUST SCALE: Start easy, end expert
+- ANSWER DIVERSITY: Each of the 10 answers must be completely unique - no duplicates or very similar answers
 
 ⚠️ CRITICAL FORMATTING REQUIREMENTS:
 - The correct answer must ALWAYS be the FIRST choice in the "choices" array (index 0)
@@ -174,6 +175,22 @@ Requirements:
 - INTERMEDIATE clues: Specific details, dates, lesser-known but not obscure facts
 - EXPERT clues: Deep trivia, technical details, historical minutiae, insider knowledge
 - All wrong answers should be plausible for the difficulty level
+
+🎯 ANSWER DIVERSITY REQUIREMENTS (CRITICAL):
+- Each of the 10 questions must have a UNIQUE answer - no duplicates allowed
+- Avoid using the same person, place, thing, or concept as an answer more than once
+- Ensure answers cover different aspects, time periods, or categories within the topic
+- Examples of what to AVOID:
+  ❌ Multiple questions about the same person (e.g., 2+ questions about Steve Jobs)
+  ❌ Multiple questions about the same event (e.g., 2+ questions about the Moon landing)
+  ❌ Multiple questions about the same place (e.g., 2+ questions about Paris)
+  ❌ Multiple questions about the same object (e.g., 2+ questions about the iPhone)
+
+✅ Examples of GOOD answer diversity:
+- Different people: Steve Jobs, Bill Gates, Elon Musk, Mark Zuckerberg
+- Different events: Moon landing, Berlin Wall fall, 9/11, COVID pandemic
+- Different places: Paris, London, Tokyo, New York
+- Different objects: iPhone, Tesla Model S, PlayStation, Hubble Telescope
 
 ⚠️ IMPORTANT: Return ONLY the JSON array, no markdown formatting, no code blocks, no additional text.
 
@@ -271,6 +288,26 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
           console.warn(`⚠️  Clue ${i + 1} is in question format instead of Jeopardy! statement format: "${questionText}"`);
           console.warn(`   Should be a statement like "This [person/place/thing]..." not "What/Who/Where..."`);
         }
+      }
+      
+      // Check for duplicate answers across all questions
+      const answers = questions.map(q => q.answer.toLowerCase().trim());
+      const duplicateAnswers = answers.filter((answer, index) => answers.indexOf(answer) !== index);
+      
+      if (duplicateAnswers.length > 0) {
+        const uniqueDuplicates = [...new Set(duplicateAnswers)];
+        console.warn(`⚠️  DUPLICATE ANSWERS DETECTED: ${uniqueDuplicates.join(', ')}`);
+        console.warn(`   Each answer should be unique across all 10 questions. Consider regenerating.`);
+        
+        // Show which questions have duplicates
+        uniqueDuplicates.forEach(duplicate => {
+          const duplicateIndices = answers
+            .map((answer, index) => answer === duplicate ? index + 1 : -1)
+            .filter(index => index !== -1);
+          console.warn(`   Answer "${duplicate}" appears in questions: ${duplicateIndices.join(', ')}`);
+        });
+      } else {
+        console.log('✅ All answers are unique - good diversity!');
       }
       
       console.log('✅ Clues validated successfully');
