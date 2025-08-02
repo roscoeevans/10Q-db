@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Shield, User } from 'lucide-react';
-import { authService } from '../lib/auth';
+import { authService } from '../../lib/auth';
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);

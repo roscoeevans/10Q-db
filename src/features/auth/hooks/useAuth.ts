@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { authService, type AuthState } from '../lib/auth';
+import { authService } from '../services/authService';
+import type { AuthState } from '../types';
 
 export function useAuth(): AuthState & {
   signOut: () => Promise<void>;
@@ -17,4 +18,4 @@ export function useAuth(): AuthState & {
     signOut: authService.signOut.bind(authService),
     refreshPermission: authService.refreshPermission.bind(authService)
   };
-}
+} 

@@ -1,0 +1,312 @@
+---
+description: Complete guide for 10Q Database project structure - use this as the single source of truth for organizing files and folders
+alwaysApply: false
+---
+
+# 10Q Database Project Structure Guide
+
+## Overview
+This project follows a hybrid architecture combining component-based organization with feature-based modules for scalability and maintainability.
+
+## Core Principles
+1. **Separation of Concerns**: UI components, business logic, and data access are clearly separated
+2. **Reusability**: Common components and utilities are shared across features
+3. **Scalability**: Structure supports growth with minimal refactoring
+4. **Type Safety**: TypeScript types are centralized and shared appropriately
+5. **Feature Isolation**: Related functionality is grouped together
+
+## Directory Structure
+
+```
+src/
+├── components/                # Reusable UI components organized by purpose
+│   ├── ui/                   # Generic, reusable UI building blocks
+│   │   ├── Button.tsx        # Standardized button with variants (primary, secondary, etc.)
+│   │   ├── Modal.tsx         # Reusable modal wrapper with title, close button
+│   │   ├── Card.tsx          # Glass card component with variants
+│   │   ├── Input.tsx         # Form input components
+│   │   ├── Textarea.tsx      # Form textarea components
+│   │   ├── Select.tsx        # Dropdown select components
+│   │   ├── Checkbox.tsx      # Form checkbox components
+│   │   ├── Badge.tsx         # Status badges and tags
+│   │   ├── Spinner.tsx       # Loading spinners
+│   │   ├── Alert.tsx         # Alert/notification components
+│   │   ├── Tooltip.tsx       # Tooltip components
+│   │   └── index.ts          # Export all UI components
+│   │
+│   ├── layout/               # Layout and navigation components
+│   │   ├── Header.tsx        # Main app header (if needed)
+│   │   ├── Sidebar.tsx       # Side navigation (if needed)
+│   │   ├── Navigation.tsx    # Main tab navigation
+│   │   ├── Footer.tsx        # App footer (if needed)
+│   │   └── Layout.tsx        # Main layout wrapper
+│   │
+│   ├── auth/                 # Authentication-specific components
+│   │   ├── LoginScreen.tsx   # Google sign-in screen
+│   │   ├── PermissionDeniedScreen.tsx # Access denied screen
+│   │   ├── AuthGuard.tsx     # Route protection component
+│   │   └── UserProfile.tsx   # User profile display
+│   │
+│   ├── questions/            # Question management components
+│   │   ├── QuestionUploadFlow/  # Multi-step question creation flow
+│   │   │   ├── index.tsx        # Main orchestrator component
+│   │   │   ├── StepIndicator.tsx # Progress indicator
+│   │   │   ├── Step1Setup.tsx   # Date/theme selection
+│   │   │   ├── Step2Generating.tsx # AI generation & editing
+│   │   │   ├── Step3Confirmation.tsx # Final review
+│   │   │   ├── DenyModal.tsx    # Feedback modal for regeneration
+│   │   │   ├── UploadingScreen.tsx # Upload progress
+│   │   │   ├── SuccessScreen.tsx # Success confirmation
+│   │   │   ├── ErrorScreen.tsx  # Error handling
+│   │   │   └── types.ts         # Flow-specific types
+│   │   │
+│   │   ├── QuestionCard.tsx     # Individual question display
+│   │   ├── QuestionEditor.tsx   # Question editing interface
+│   │   ├── QuestionList.tsx     # List of questions with filtering
+│   │   ├── QuestionSearch.tsx   # Search and filter interface
+│   │   ├── TagManager.tsx       # Tag creation and management
+│   │   └── DifficultySelector.tsx # Difficulty level selector
+│   │
+│   └── dashboard/            # Dashboard and statistics components
+│       ├── StatsCard.tsx     # Individual stat display card
+│       ├── QuickUploadCTA.tsx # Call-to-action for uploads
+│       ├── RecentActivity.tsx # Recent questions/uploads
+│       ├── ProgressChart.tsx  # Upload progress visualization
+│       └── AdminPanel.tsx     # Admin-specific controls
+│
+├── features/                 # Feature-based organization for business logic
+│   ├── auth/                # Authentication feature module
+│   │   ├── hooks/
+│   │   │   ├── useAuth.ts   # Main auth hook (moved from global)
+│   │   │   ├── usePermissions.ts # Permission checking
+│   │   │   └── useAuthRedirect.ts # Auth-based navigation
+│   │   ├── services/
+│   │   │   ├── authService.ts # Auth business logic
+│   │   │   └── permissionService.ts # Permission management
+│   │   ├── utils/
+│   │   │   └── authHelpers.ts # Auth utility functions
+│   │   └── types.ts         # Auth-specific types
+│   │
+│   ├── questions/           # Question management feature module
+│   │   ├── hooks/
+│   │   │   ├── useQuestions.ts # Question CRUD operations
+│   │   │   ├── useQuestionGeneration.ts # AI generation logic
+│   │   │   ├── useQuestionSearch.ts # Search and filtering
+│   │   │   └── useQuestionUpload.ts # Upload management
+│   │   ├── services/
+│   │   │   ├── questionService.ts # Question business logic
+│   │   │   ├── aiService.ts       # AI generation service
+│   │   │   ├── uploadService.ts   # Upload handling
+│   │   │   └── validationService.ts # Question validation
+│   │   ├── utils/
+│   │   │   ├── questionHelpers.ts # Question utility functions
+│   │   │   ├── formatters.ts      # Question formatting
+│   │   │   └── validators.ts      # Question validation rules
+│   │   └── types.ts         # Question-specific types
+│   │
+│   ├── dashboard/           # Dashboard feature module
+│   │   ├── hooks/
+│   │   │   ├── useStats.ts  # Statistics calculation
+│   │   │   └── useAnalytics.ts # Usage analytics
+│   │   ├── services/
+│   │   │   ├── statsService.ts # Statistics business logic
+│   │   │   └── analyticsService.ts # Analytics collection
+│   │   └── types.ts         # Dashboard-specific types
+│   │
+│   └── admin/               # Admin-specific features (future)
+│       ├── hooks/
+│       ├── services/
+│       └── types.ts
+│
+├── lib/                     # Core utilities and configurations
+│   ├── firebase/           # Firebase configuration and setup
+│   │   ├── config.ts       # Firebase app configuration
+│   │   ├── auth.ts         # Firebase Auth setup
+│   │   ├── firestore.ts    # Firestore configuration
+│   │   └── admin.ts        # Firebase Admin SDK setup
+│   │
+│   ├── utils/              # Shared utility functions
+│   │   ├── date.ts         # Date formatting and manipulation
+│   │   ├── validation.ts   # Common validation functions
+│   │   ├── formatting.ts   # Text and data formatting
+│   │   ├── storage.ts      # Local/session storage helpers
+│   │   ├── api.ts          # API request helpers
+│   │   └── index.ts        # Export all utilities (including cn from utils.ts)
+│   │
+│   ├── constants/          # Application constants
+│   │   ├── routes.ts       # Route definitions
+│   │   ├── config.ts       # App configuration constants
+│   │   ├── themes.ts       # Theme and styling constants
+│   │   └── api.ts          # API endpoints and keys
+│   │
+│   └── errors/             # Error handling utilities
+│       ├── errorTypes.ts   # Custom error classes
+│       ├── errorHandlers.ts # Error handling functions
+│       └── errorBoundary.tsx # React error boundary
+│
+├── types/                  # Global type definitions
+│   ├── auth.ts            # Authentication types
+│   ├── questions.ts       # Question-related types
+│   ├── common.ts          # Shared/common types
+│   ├── api.ts             # API response/request types
+│   └── index.ts           # Export all types
+│
+├── hooks/                 # Global hooks (use sparingly)
+│   ├── useLocalStorage.ts # Local storage management
+│   ├── useDebounce.ts     # Debouncing utility
+│   ├── useWindowSize.ts   # Window size tracking
+│   └── useKeyboard.ts     # Keyboard event handling
+│
+├── pages/                 # Top-level page components
+│   ├── HomePage.tsx       # Dashboard/home page
+│   ├── UploadPage.tsx     # Question upload page
+│   ├── ExplorePage.tsx    # Question browsing page
+│   ├── SettingsPage.tsx   # User settings page
+│   ├── AdminPage.tsx      # Admin panel (future)
+│   └── NotFoundPage.tsx   # 404 error page
+│
+├── styles/                # Global styles (if needed)
+│   ├── globals.css        # Global CSS styles
+│   ├── components.css     # Component-specific styles
+│   └── utilities.css      # Utility classes
+│
+├── assets/                # Static assets
+│   ├── images/            # Image files
+│   ├── icons/             # Icon files
+│   └── fonts/             # Custom fonts
+│
+├── tests/                 # Test files (future)
+│   ├── __mocks__/         # Test mocks
+│   ├── components/        # Component tests
+│   ├── features/          # Feature tests
+│   └── utils/             # Utility tests
+│
+├── App.tsx                # Main application component
+├── main.tsx               # Application entry point
+└── vite-env.d.ts          # Vite type definitions
+```
+
+## File Naming Conventions
+
+### Components
+- **PascalCase** for component files: `QuestionCard.tsx`
+- **camelCase** for hooks: `useQuestions.ts`
+- **camelCase** for utilities: `dateHelpers.ts`
+- **camelCase** for services: `questionService.ts`
+
+### Directories
+- **lowercase** for feature directories: `questions/`, `auth/`
+- **PascalCase** for component directories: `QuestionUploadFlow/`
+
+## Import/Export Patterns
+
+### Barrel Exports
+Use index.ts files to create clean import paths:
+```typescript
+// components/ui/index.ts
+export { default as Button } from './Button';
+export { default as Modal } from './Modal';
+export { default as Card } from './Card';
+
+// Usage
+import { Button, Modal, Card } from '@/components/ui';
+```
+
+### Feature Exports
+Each feature should export its main interfaces:
+```typescript
+// features/questions/index.ts
+export * from './hooks';
+export * from './services';
+export * from './types';
+```
+
+## Component Organization Guidelines
+
+### UI Components (`components/ui/`)
+- **Pure, reusable components**
+- No business logic or external dependencies
+- Configurable through props
+- Include TypeScript interfaces for props
+- Support theming and variants
+
+### Feature Components (`components/[feature]/`)
+- **Feature-specific UI components**
+- Can use feature hooks and services
+- Handle feature-specific state and logic
+- Compose UI components
+
+### Page Components (`pages/`)
+- **Top-level route components**
+- Orchestrate multiple features
+- Handle page-level state
+- Minimal business logic (delegate to features)
+
+## Business Logic Organization
+
+### Services (`features/[feature]/services/`)
+- **Pure business logic functions**
+- No React dependencies
+- Testable and reusable
+- Handle API calls and data transformation
+
+### Hooks (`features/[feature]/hooks/`)
+- **React-specific logic**
+- State management
+- Side effects (useEffect)
+- Compose services with React patterns
+
+### Utils (`features/[feature]/utils/`)
+- **Feature-specific utility functions**
+- Pure functions
+- No external dependencies
+- Easily testable
+
+## Future Growth Guidelines
+
+### Adding New Features
+1. Create feature directory: `features/newFeature/`
+2. Add hooks, services, utils, types as needed
+3. Create feature components: `components/newFeature/`
+4. Add page if needed: `pages/NewFeaturePage.tsx`
+5. Update types and exports
+
+### Adding New Pages
+1. Create page component: `pages/NewPage.tsx`
+2. Add route constant: `lib/constants/routes.ts`
+3. Update navigation: `components/layout/Navigation.tsx`
+4. Add to main App routing logic
+
+### Scaling Considerations
+- **Micro-frontends**: Features can be extracted to separate packages
+- **State Management**: Add Redux/Zustand when component prop drilling becomes unwieldy
+- **Testing**: Add test files parallel to source files
+- **Documentation**: Add README files to complex feature directories
+- **Monitoring**: Add error tracking and analytics services
+
+## Best Practices
+
+### Component Design
+- Keep components small and focused
+- Use composition over inheritance
+- Prefer props over context for data flow
+- Handle loading and error states
+
+### State Management
+- Keep state as local as possible
+- Use custom hooks for complex state logic
+- Consider global state only for truly global data
+
+### Performance
+- Use React.memo for expensive components
+- Implement proper key props for lists
+- Lazy load pages and heavy components
+- Optimize bundle size with proper imports
+
+### Type Safety
+- Define interfaces for all props and data structures
+- Use strict TypeScript configuration
+- Avoid `any` types
+- Use generic types for reusable components
+
+This structure provides a solid foundation that can scale from the current simple app to a complex, multi-feature application while maintaining code quality and developer experience.

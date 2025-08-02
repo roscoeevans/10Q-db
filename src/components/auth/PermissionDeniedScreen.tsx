@@ -1,5 +1,5 @@
 import { LogOut, AlertTriangle, User, Lock } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../../features/auth';
 
 export default function PermissionDeniedScreen() {
   const { user, userRole, signOut } = useAuth();

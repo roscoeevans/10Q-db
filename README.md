@@ -50,6 +50,24 @@ node scripts/manage-admin-users.js list
 
 For detailed setup instructions, see [FIREBASE_ADMIN_SETUP.md](./FIREBASE_ADMIN_SETUP.md).
 
+## ✨ Features
+
+### 🤖 AI-Powered Question Generation
+- **Smart Generation**: AI creates 10 Jeopardy-style questions with progressive difficulty
+- **Theme-Based**: Questions are generated based on your chosen theme (e.g., "World History", "Science", "Pop Culture")
+- **Quality Control**: Each question includes 4 multiple choice options and 3 hierarchical tags
+
+### 🔄 Deny & Regenerate Feature
+- **Feedback-Driven**: Click "Deny & Regenerate" to provide feedback on any question
+- **Smart Regeneration**: AI uses your feedback to create a better replacement question
+- **Context-Aware**: The AI considers other approved questions to avoid duplicates and maintain consistency
+- **Maintains Difficulty**: Regenerated questions maintain the same difficulty level as the original
+
+### 📊 Question Management
+- **Visual Progress**: See which questions are approved with progress indicators
+- **Edit Interface**: Modify questions, choices, and tags before approval
+- **Batch Upload**: Upload all 10 questions at once to the database
+
 ## 🚀 Employee Setup Guide
 
 ### 📋 Prerequisites

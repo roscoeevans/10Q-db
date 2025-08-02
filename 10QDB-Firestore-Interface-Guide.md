@@ -17,7 +17,7 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBqAKNg5TQ7Dup9l96_SrzOF2_t46Xe0c0",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "q-production-e4848.firebaseapp.com",
   projectId: "q-production-e4848",
   storageBucket: "q-production-e4848.firebasestorage.app",

@@ -1,36 +1,11 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+// Re-export from new firebase config structure
+export * from './firebase/config';
+
+// Import AI dependencies
 import { getAI, getGenerativeModel } from 'firebase/ai';
-
-// Firebase configuration for 10Q-db
-const firebaseConfig = {
-  apiKey: "AIzaSyBqAKNg5TQ7Dup9l96_SrzOF2_t46Xe0c0",
-  authDomain: "q-production-e4848.firebaseapp.com",
-  projectId: "q-production-e4848",
-  storageBucket: "q-production-e4848.firebasestorage.app",
-  messagingSenderId: "1004209252200",
-  appId: "1:1004209252200:web:254c79d46e184a00af58dd",
-  measurementId: "G-MC3HT5MY4V"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-// Initialize Firestore
-export const db = getFirestore(app);
-
-// Initialize Auth
-export const auth = getAuth(app);
-
-// Initialize Google Auth Provider
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('email');
-googleProvider.addScope('profile');
+import { app } from './firebase/config';
 
 // Real Gemini AI integration
-
-// Initialize Gemini AI
 // Firebase AI Logic - uses Firebase's managed Gemini API integration
 export const geminiAI = {
   generateContent: async (prompt: string) => {
@@ -82,7 +57,5 @@ export const geminiAI = {
     }
   }
 };
-
-
 
 export default app; 

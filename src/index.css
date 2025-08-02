@@ -21,16 +21,16 @@
 @layer components {
   /* Liquid Glass Card */
   .glass-card {
-    @apply bg-white/20 dark:bg-ios-gray-900/20;
-    @apply backdrop-blur-xl;
-    @apply border border-white/30 dark:border-ios-gray-700/30;
+    @apply bg-white/80 dark:bg-ios-gray-900/80;
+    @apply backdrop-blur-md;
+    @apply border border-white/40 dark:border-ios-gray-700/40;
     @apply rounded-2xl;
     @apply shadow-glass;
     @apply transition-all duration-300;
   }
   
   .glass-card:hover {
-    @apply bg-white/30 dark:bg-ios-gray-900/30;
+    @apply bg-white/90 dark:bg-ios-gray-900/90;
     @apply shadow-ios-lg;
     @apply transform scale-[1.02];
   }

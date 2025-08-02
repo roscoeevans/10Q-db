@@ -104,6 +104,8 @@ export async function generateQuestionsWithAI(
 - Keep clues brief and punchy (10-20 words max)
 - Include context hints, dates, or wordplay when possible
 - Tone should be academic but playful, trivia-forward but not dry
+- NEVER include the answer directly in the clue text
+- Provide context clues that lead to the answer, but don't state it
 
 🚨 CRITICAL: NEVER USE QUESTION FORMAT
 - ❌ WRONG: "What industry did Andrew Carnegie make his fortune in?"
@@ -131,6 +133,11 @@ export async function generateQuestionsWithAI(
 - Intermediate (Q5): "This Norse god wields a hammer named Mjolnir." → Who is Thor?
 - Expert (Q10): "This 1969 comic issue introduced Bucky Barnes as the Winter Soldier." → What is Captain America #110?
 
+❌ WRONG EXAMPLES (DO NOT DO THIS):
+- "This Blighted Minotaur is a Taken enemy in Destiny." → What is Blighted Minotaur? (WRONG - answer in clue!)
+- "This Steve Jobs founded Apple." → Who is Steve Jobs? (WRONG - answer in clue!)
+- "This Paris is the capital of France." → What is Paris? (WRONG - answer in clue!)
+
 🎯 MORE EXAMPLES OF CORRECT JEOPARDY! FORMAT:
 - "This steel magnate made his fortune in the late 19th century." → Who is Andrew Carnegie?
 - "This 1994 film features a bus that must stay above 50 miles per hour." → What is Speed?
@@ -155,6 +162,8 @@ export async function generateQuestionsWithAI(
 - Use subjective or opinion-based statements
 - End with question marks
 - Tell contestants how to answer (e.g., "what industry" tells them to say "What is...")
+- Put the answer in the clue (e.g., "This Blighted Minotaur is a Taken enemy" - WRONG!)
+- Use the answer as a descriptor in the clue
 
 Requirements:
 - Each clue must have exactly 4 multiple choice options
@@ -331,6 +340,139 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
   } catch (error) {
     console.error('Error generating questions with AI:', error);
     throw new Error('Failed to generate questions with AI');
+  }
+}
+
+// Generate a single question with feedback for regeneration
+export async function generateSingleQuestionWithFeedback(
+  topic: string,
+  feedback: string,
+  existingQuestions: QuestionUpload[],
+  questionIndex: number,
+  targetDate: string
+): Promise<QuestionUpload> {
+  try {
+    // Get the other approved questions for context
+    const otherQuestions = existingQuestions
+      .map((q, i) => ({ ...q, index: i }))
+      .filter((_, i) => i !== questionIndex)
+      .slice(0, 5); // Limit to 5 for context
+
+    const prompt = `Given the theme: "${topic}", I need to regenerate question ${questionIndex + 1} (difficulty level ${questionIndex + 1}/10) because of this feedback: "${feedback}"
+
+The rejected question was: "${existingQuestions[questionIndex]?.question || 'Unknown'}"
+
+Here are some other questions from the same quiz for context (to avoid duplicates and maintain consistency):
+${otherQuestions.map((q, i) => `${i + 1}. "${q.question}" (Answer: ${q.answer})`).join('\n')}
+
+🎯 REQUIREMENTS:
+- Generate a NEW Jeopardy!-style clue that addresses the feedback
+- Maintain the same difficulty level (${questionIndex + 1}/10)
+- Ensure the answer is UNIQUE and not used in other questions
+- Follow the same Jeopardy! format (statement, not question)
+- Include exactly 3 tags (broad → subcategory → specific)
+- Provide exactly 4 multiple choice options
+- The correct answer must be the FIRST choice
+- NEVER include the answer directly in the clue text
+- Provide context clues that lead to the answer, but don't state it
+
+🚨 CRITICAL: DO NOT PUT THE ANSWER IN THE CLUE!
+- WRONG: "This Blighted Minotaur is a Taken enemy" (answer is in the clue!)
+- CORRECT: "This Taken enemy has a corrupted, shadowy appearance and wields void powers"
+
+🎯 DIFFICULTY GUIDELINES for question ${questionIndex + 1}:
+${questionIndex === 0 ? 'EASY - General knowledge that most people would know' :
+  questionIndex <= 2 ? 'BEGINNER - Basic facts that casual fans might know' :
+  questionIndex <= 5 ? 'INTERMEDIATE - Requires some knowledge of the topic' :
+  questionIndex <= 7 ? 'ADVANCED - For people well-versed in the subject' :
+  questionIndex === 8 ? 'EXPERT - Very challenging, specialist knowledge' :
+  'MASTER - Only true experts/enthusiasts would know this'}
+
+⚠️ CRITICAL: Return ONLY the JSON object, no markdown formatting, no code blocks, no additional text.
+
+Output in JSON format with this exact structure (note: do NOT include the date field - it will be added automatically):
+{
+  "question": "This city on the Seine is the capital of France.",
+  "choices": ["Paris", "London", "Berlin", "Madrid"],
+  "answer": "Paris",
+  "tags": ["Geography", "Europe", "Capitals"]
+}`;
+
+    const response = await geminiAI.generateContent(prompt);
+    const content = response.text;
+    
+    if (!content) {
+      throw new Error('No content generated from AI');
+    }
+
+    console.log('🤖 Raw AI Response for regeneration:', content);
+    console.log('📝 Response preview:', content.substring(0, 200) + '...');
+
+    // Clean the JSON response by removing markdown code blocks
+    let cleanedContent = content.trim();
+    
+    // Remove ```json and ``` markers if present
+    if (cleanedContent.startsWith('```json')) {
+      cleanedContent = cleanedContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedContent.startsWith('```')) {
+      cleanedContent = cleanedContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('🧹 Cleaned JSON for parsing:', cleanedContent.substring(0, 200) + '...');
+
+    // Parse the JSON response
+    let question: QuestionUpload;
+    try {
+      question = JSON.parse(cleanedContent) as QuestionUpload;
+    } catch (parseError) {
+      console.error('❌ JSON parsing error:', parseError);
+      console.error('Raw content:', content);
+      throw new Error('Failed to parse AI response. Please try again.');
+    }
+
+    // Add the date field to the question
+    question.date = targetDate;
+    
+    console.log('🔧 Regenerated question with date:', {
+      question: question.question,
+      answer: question.answer,
+      choices: question.choices,
+      tags: question.tags,
+      date: question.date
+    });
+    
+    // Validate the regenerated question
+    validateQuestion(question);
+
+    // Ensure answer matches first choice
+    if (question.answer !== question.choices[0]) {
+      const bestMatch = findBestChoiceMatch(question.answer, question.choices);
+      if (bestMatch) {
+        // Reorder choices to put the correct answer first
+        const matchIndex = question.choices.findIndex(choice => choice === bestMatch);
+        question.choices.splice(matchIndex, 1);
+        question.choices.unshift(bestMatch);
+        question.answer = bestMatch;
+      } else {
+        // Fallback: use first choice as answer
+        console.log(`🔧 Fallback for regenerated question: Using first choice "${question.choices[0]}" as answer`);
+        question.answer = question.choices[0];
+      }
+    }
+
+    // Check for duplicate answers with existing questions
+    const existingAnswers = existingQuestions
+      .filter((_, i) => i !== questionIndex)
+      .map(q => q.answer.toLowerCase().trim());
+    
+    if (existingAnswers.includes(question.answer.toLowerCase().trim())) {
+      console.warn(`⚠️  Regenerated question has duplicate answer: "${question.answer}"`);
+    }
+
+    return question;
+  } catch (error) {
+    console.error('Error generating single question with feedback:', error);
+    throw new Error('Failed to regenerate question with feedback');
   }
 }
 
