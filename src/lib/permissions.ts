@@ -57,39 +57,9 @@ export class PermissionService {
         return permission;
       }
 
-      // If no admin claim, check Firestore as fallback (for backward compatibility)
-      const adminDocRef = doc(db, 'admin_users', email);
-      const adminDoc = await getDoc(adminDocRef);
-
-      if (adminDoc.exists()) {
-        const adminData = adminDoc.data();
-        const permission: PermissionCheck = {
-          hasPermission: true,
-          role: adminData.role || 'admin',
-          grantedAt: adminData.grantedAt
-        };
-
-        // Cache the result
-        this.cache.set(email, {
-          permission,
-          timestamp: Date.now()
-        });
-
-        console.log(`✅ Admin access granted for ${email} via Firestore (fallback)`);
-        return permission;
-      }
-
-      // Fallback to hardcoded list for backward compatibility
-      const authorizedEmails = [
-        'roscoeevans@gmail.com',
-        'admin@10q.com',
-        // Add more authorized emails here
-      ];
-
-      const hasPermission = authorizedEmails.includes(email);
+      // No admin claim found
       const permission: PermissionCheck = { 
-        hasPermission,
-        role: hasPermission ? 'admin' : undefined
+        hasPermission: false
       };
 
       // Cache the result
@@ -98,26 +68,14 @@ export class PermissionService {
         timestamp: Date.now()
       });
 
-      if (hasPermission) {
-        console.log(`✅ Admin access granted for ${email} via hardcoded list (fallback)`);
-      } else {
-        console.log(`❌ Admin access denied for ${email} - no admin claim found`);
-      }
-
+      console.log(`❌ Admin access denied for ${email} - no admin claim found`);
       return permission;
     } catch (error) {
       console.error('Error checking user permission:', error);
       
-      // On error, fall back to hardcoded list
-      const authorizedEmails = [
-        'roscoeevans@gmail.com',
-        'admin@10q.com',
-      ];
-      
-      const hasPermission = authorizedEmails.includes(email);
+      // On error, deny access
       return { 
-        hasPermission,
-        role: hasPermission ? 'admin' : undefined
+        hasPermission: false
       };
     }
   }
