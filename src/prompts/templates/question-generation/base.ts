@@ -2,6 +2,7 @@ import type { PromptTemplate } from '../../types/prompt-types';
 import { FORMATTING_RULES_TEMPLATE } from '../shared/formatting-rules';
 import { DIFFICULTY_SCALING_TEMPLATE } from '../shared/difficulty-scaling';
 import { ANSWER_DIVERSITY_TEMPLATE } from '../shared/answer-diversity';
+import { FACTUAL_ACCURACY_TEMPLATE } from '../shared/factual-accuracy';
 
 // Base template for question generation
 export const QUESTION_GENERATION_BASE_TEMPLATE: PromptTemplate = {
@@ -16,6 +17,8 @@ export const QUESTION_GENERATION_BASE_TEMPLATE: PromptTemplate = {
 {difficulty_scaling}
 
 {answer_diversity}
+
+{factual_accuracy}
 
 🏷️ Tag Hierarchy Principle:
 - First tag: Very general category (History, Science, Pop Culture, Sports, etc.)
@@ -64,6 +67,12 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
       type: 'string',
       required: false,
       description: 'Answer diversity content (injected from template)'
+    },
+    {
+      name: 'factual_accuracy',
+      type: 'string',
+      required: false,
+      description: 'Factual accuracy content (injected from template)'
     }
   ],
   constraints: [

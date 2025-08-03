@@ -8,6 +8,7 @@ import type {
 import { FORMATTING_RULES_TEMPLATE, SIMPLIFIED_FORMATTING_RULES, MINIMAL_FORMATTING_RULES } from '../templates/shared/formatting-rules';
 import { DIFFICULTY_SCALING_TEMPLATE, SIMPLIFIED_DIFFICULTY_SCALING } from '../templates/shared/difficulty-scaling';
 import { ANSWER_DIVERSITY_TEMPLATE, SIMPLIFIED_ANSWER_DIVERSITY } from '../templates/shared/answer-diversity';
+import { FACTUAL_ACCURACY_TEMPLATE, SIMPLIFIED_FACTUAL_ACCURACY } from '../templates/shared/factual-accuracy';
 import { getDifficultyDescription } from '../templates/shared/difficulty-scaling';
 
 // Simple token estimation (rough approximation)
@@ -38,7 +39,7 @@ function substituteVariables(template: string, variables: Record<string, any>): 
 }
 
 // Get appropriate shared template based on strategy
-function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversity', strategy: 'primary' | 'simplified' | 'minimal' | 'legacy'): string {
+function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversity' | 'accuracy', strategy: 'primary' | 'simplified' | 'minimal' | 'legacy'): string {
   switch (templateType) {
     case 'formatting':
       switch (strategy) {
@@ -79,6 +80,19 @@ function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversit
         default:
           return ANSWER_DIVERSITY_TEMPLATE.content;
       }
+    case 'accuracy':
+      switch (strategy) {
+        case 'primary':
+          return FACTUAL_ACCURACY_TEMPLATE.content;
+        case 'simplified':
+          return SIMPLIFIED_FACTUAL_ACCURACY.content;
+        case 'minimal':
+          return 'Use only well-established, accurate facts.';
+        case 'legacy':
+          return FACTUAL_ACCURACY_TEMPLATE.content;
+        default:
+          return FACTUAL_ACCURACY_TEMPLATE.content;
+      }
   }
 }
 
@@ -111,6 +125,11 @@ export function buildPrompt(config: PromptBuilderConfig): BuiltPrompt {
   if (content.includes('{answer_diversity}')) {
     const answerDiversity = getSharedTemplate('diversity', strategy);
     content = content.replace('{answer_diversity}', answerDiversity);
+  }
+  
+  if (content.includes('{factual_accuracy}')) {
+    const factualAccuracy = getSharedTemplate('accuracy', strategy);
+    content = content.replace('{factual_accuracy}', factualAccuracy);
   }
   
   // Handle special variables

@@ -10,6 +10,7 @@ export * from './config/prompt-config';
 export * from './templates/shared/formatting-rules';
 export * from './templates/shared/difficulty-scaling';
 export * from './templates/shared/answer-diversity';
+export * from './templates/shared/factual-accuracy';
 export * from './templates/question-generation/base';
 
 // Utilities
@@ -43,6 +44,12 @@ export {
   getAnswerCategories,
   validateTopicDiversity
 } from './templates/shared/answer-diversity';
+
+export {
+  checkFactualAccuracy,
+  getFactualAccuracyGuidelines,
+  validateFactualAccuracy
+} from './templates/shared/factual-accuracy';
 
 // Prompt builder utilities
 export {
