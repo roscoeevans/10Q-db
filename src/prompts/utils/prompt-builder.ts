@@ -9,6 +9,8 @@ import { FORMATTING_RULES_TEMPLATE, SIMPLIFIED_FORMATTING_RULES, MINIMAL_FORMATT
 import { DIFFICULTY_SCALING_TEMPLATE, SIMPLIFIED_DIFFICULTY_SCALING } from '../templates/shared/difficulty-scaling';
 import { ANSWER_DIVERSITY_TEMPLATE, SIMPLIFIED_ANSWER_DIVERSITY } from '../templates/shared/answer-diversity';
 import { FACTUAL_ACCURACY_TEMPLATE, SIMPLIFIED_FACTUAL_ACCURACY } from '../templates/shared/factual-accuracy';
+import { ENGAGEMENT_FUN_TEMPLATE, SIMPLIFIED_ENGAGEMENT_FUN } from '../templates/shared/engagement-fun';
+import { ZEITGEIST_CULTURE_TEMPLATE, SIMPLIFIED_ZEITGEIST_CULTURE } from '../templates/shared/zeitgeist-culture';
 import { getDifficultyDescription } from '../templates/shared/difficulty-scaling';
 
 // Simple token estimation (rough approximation)
@@ -39,7 +41,7 @@ function substituteVariables(template: string, variables: Record<string, any>): 
 }
 
 // Get appropriate shared template based on strategy
-function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversity' | 'accuracy', strategy: 'primary' | 'simplified' | 'minimal' | 'legacy'): string {
+function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversity' | 'accuracy' | 'engagement' | 'zeitgeist', strategy: 'primary' | 'simplified' | 'minimal' | 'legacy'): string {
   switch (templateType) {
     case 'formatting':
       switch (strategy) {
@@ -93,6 +95,32 @@ function getSharedTemplate(templateType: 'formatting' | 'difficulty' | 'diversit
         default:
           return FACTUAL_ACCURACY_TEMPLATE.content;
       }
+    case 'engagement':
+      switch (strategy) {
+        case 'primary':
+          return ENGAGEMENT_FUN_TEMPLATE.content;
+        case 'simplified':
+          return SIMPLIFIED_ENGAGEMENT_FUN.content;
+        case 'minimal':
+          return 'Make questions engaging and include diverse content.';
+        case 'legacy':
+          return ENGAGEMENT_FUN_TEMPLATE.content;
+        default:
+          return ENGAGEMENT_FUN_TEMPLATE.content;
+      }
+    case 'zeitgeist':
+      switch (strategy) {
+        case 'primary':
+          return ZEITGEIST_CULTURE_TEMPLATE.content;
+        case 'simplified':
+          return SIMPLIFIED_ZEITGEIST_CULTURE.content;
+        case 'minimal':
+          return 'Include current cultural awareness and popular opinions.';
+        case 'legacy':
+          return ZEITGEIST_CULTURE_TEMPLATE.content;
+        default:
+          return ZEITGEIST_CULTURE_TEMPLATE.content;
+      }
   }
 }
 
@@ -130,6 +158,16 @@ export function buildPrompt(config: PromptBuilderConfig): BuiltPrompt {
   if (content.includes('{factual_accuracy}')) {
     const factualAccuracy = getSharedTemplate('accuracy', strategy);
     content = content.replace('{factual_accuracy}', factualAccuracy);
+  }
+  
+  if (content.includes('{engagement_fun}')) {
+    const engagementFun = getSharedTemplate('engagement', strategy);
+    content = content.replace('{engagement_fun}', engagementFun);
+  }
+  
+  if (content.includes('{zeitgeist_culture}')) {
+    const zeitgeistCulture = getSharedTemplate('zeitgeist', strategy);
+    content = content.replace('{zeitgeist_culture}', zeitgeistCulture);
   }
   
   // Handle special variables

@@ -11,6 +11,8 @@ export * from './templates/shared/formatting-rules';
 export * from './templates/shared/difficulty-scaling';
 export * from './templates/shared/answer-diversity';
 export * from './templates/shared/factual-accuracy';
+export * from './templates/shared/engagement-fun';
+export * from './templates/shared/zeitgeist-culture';
 export * from './templates/question-generation/base';
 
 // Utilities
@@ -50,6 +52,18 @@ export {
   getFactualAccuracyGuidelines,
   validateFactualAccuracy
 } from './templates/shared/factual-accuracy';
+
+export {
+  checkEngagementFun,
+  getEngagementFunGuidelines,
+  validateEngagementFun
+} from './templates/shared/engagement-fun';
+
+export {
+  checkZeitgeistCulture,
+  getZeitgeistCultureGuidelines,
+  validateZeitgeistCulture
+} from './templates/shared/zeitgeist-culture';
 
 // Prompt builder utilities
 export {

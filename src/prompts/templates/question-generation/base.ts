@@ -3,6 +3,8 @@ import { FORMATTING_RULES_TEMPLATE } from '../shared/formatting-rules';
 import { DIFFICULTY_SCALING_TEMPLATE } from '../shared/difficulty-scaling';
 import { ANSWER_DIVERSITY_TEMPLATE } from '../shared/answer-diversity';
 import { FACTUAL_ACCURACY_TEMPLATE } from '../shared/factual-accuracy';
+import { ENGAGEMENT_FUN_TEMPLATE } from '../shared/engagement-fun';
+import { ZEITGEIST_CULTURE_TEMPLATE } from '../shared/zeitgeist-culture';
 
 // Base template for question generation
 export const QUESTION_GENERATION_BASE_TEMPLATE: PromptTemplate = {
@@ -19,6 +21,10 @@ export const QUESTION_GENERATION_BASE_TEMPLATE: PromptTemplate = {
 {answer_diversity}
 
 {factual_accuracy}
+
+{engagement_fun}
+
+{zeitgeist_culture}
 
 🏷️ Tag Hierarchy Principle:
 - First tag: Very general category (History, Science, Pop Culture, Sports, etc.)
@@ -73,6 +79,18 @@ Output in JSON format with this exact structure (note: correct answer is ALWAYS 
       type: 'string',
       required: false,
       description: 'Factual accuracy content (injected from template)'
+    },
+    {
+      name: 'engagement_fun',
+      type: 'string',
+      required: false,
+      description: 'Engagement and fun content (injected from template)'
+    },
+    {
+      name: 'zeitgeist_culture',
+      type: 'string',
+      required: false,
+      description: 'Zeitgeist and culture content (injected from template)'
     }
   ],
   constraints: [
