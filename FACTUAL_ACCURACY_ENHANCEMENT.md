@@ -44,7 +44,7 @@ This enhancement adds comprehensive factual accuracy requirements to the questio
 - `getFactualAccuracyGuidelines()`: Returns best practices
 
 **Detection Features:**
-- Recent information (2023, 2024, "recent")
+- Recent information (2023, 2024, 2025, "recent")
 - Controversial or disputed facts
 - Speculative or theoretical information
 - Temporary data (polls, surveys, approval ratings)
@@ -139,7 +139,7 @@ export interface FactualAccuracyCheck {
 
 ### **Before Enhancement**
 ```
-❌ Example: "This company's stock price reached $150 in 2024."
+❌ Example: "This company's stock price reached $150 in 2025."
 ❌ Example: "This politician's approval rating is 45%."
 ❌ Example: "This theory suggests that climate change..."
 ```

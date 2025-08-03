@@ -37,7 +37,7 @@ export const FACTUAL_ACCURACY_TEMPLATE: PromptTemplate = {
 - ✅ CORRECT: "This 1969 event saw Neil Armstrong become the first person to walk on the Moon." (established historical fact)
 - ✅ CORRECT: "This element with atomic number 79 is a precious metal used in jewelry." (established scientific fact)
 - ✅ CORRECT: "This city on the Seine River is the capital of France." (established geographic fact)
-- ❌ AVOID: "This company's stock price reached $150 in 2024." (may change quickly)
+- ❌ AVOID: "This company's stock price reached $150 in 2025." (may change quickly)
 - ❌ AVOID: "This politician's approval rating is 45%." (temporary, changing data)
 - ❌ AVOID: "This theory suggests that..." (speculative or theoretical)
 
@@ -141,7 +141,7 @@ export function checkFactualAccuracy(facts: string[]): FactualAccuracyCheck {
 
   for (const fact of facts) {
     // Check for potential issues
-    if (fact.includes('2024') || fact.includes('2023') || fact.includes('recent')) {
+    if (fact.includes('2025') || fact.includes('2024') || fact.includes('2023') || fact.includes('recent')) {
       issues.push(`Recent information detected: "${fact}" - may change quickly`);
       recommendations.push('Consider using more established historical facts');
       confidence *= 0.8;
