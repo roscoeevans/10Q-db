@@ -6,7 +6,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Individual question response saving
       match /responses/{userId} {
@@ -19,14 +19,14 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Tag questions subcollection
       match /questions/{questionId} {
         allow read: if request.auth != null;
         allow write: if request.auth != null && 
           (request.auth.token.admin == true || 
-           request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com']);
+           request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       }
     }
     
@@ -34,7 +34,7 @@ service cloud.firestore {
     match /admin_users/{email} {
       allow read, write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
     }
   }
 } 
