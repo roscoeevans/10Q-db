@@ -4,7 +4,9 @@ service cloud.firestore {
     // Questions collection - read for authenticated users, write for admin users
     match /questions/{questionId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Individual question response saving
       match /responses/{userId} {
@@ -15,18 +17,24 @@ service cloud.firestore {
     // Tags collection - read for authenticated users, write for admin users
     match /tags/{tagName} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Tag questions subcollection
       match /questions/{questionId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.token.admin == true;
+        allow write: if request.auth != null && 
+          (request.auth.token.admin == true || 
+           request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       }
     }
     
     // Admin users collection - read/write for admin users only
     match /admin_users/{email} {
-      allow read, write: if request.auth != null && request.auth.token.admin == true;
+      allow read, write: if request.auth != null && 
+        (request.auth.token.admin == true || 
+         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
     }
   }
 } 
