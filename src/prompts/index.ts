@@ -1,84 +1,17 @@
-// Prompt Management System - Main Export File
+// Simple Prompt Management System - Main Export File
 
-// Types
-export * from './types/prompt-types';
-
-// Configuration
-export * from './config/prompt-config';
-
-// Templates
-export * from './templates/shared/formatting-rules';
-export * from './templates/shared/difficulty-scaling';
-export * from './templates/shared/answer-diversity';
-export * from './templates/shared/factual-accuracy';
-export * from './templates/shared/engagement-fun';
-export * from './templates/shared/zeitgeist-culture';
-export * from './templates/question-generation/base';
-
-// Utilities
-export * from './utils/prompt-builder';
-
-// Main prompt management functions
-export { buildQuestionGenerationPrompt, buildQuestionRegenerationPrompt } from './utils/prompt-builder';
-
-// Configuration constants
+// Simple prompt functions
 export { 
-  PROMPT_CONFIG,
-  QUESTION_GENERATION_CONFIG,
-  TEMPLATE_CONFIG,
-  VALIDATION_CONFIG,
-  AB_TESTING_CONFIG,
-  ANALYTICS_CONFIG,
-  FALLBACK_CONFIG,
-  ERROR_CONFIG,
-  PERFORMANCE_CONFIG
+  QUESTION_GENERATION_PROMPT,
+  QUESTION_REGENERATION_PROMPT,
+  buildSimpleQuestionPrompt,
+  buildSimpleRegenerationPrompt
 } from './config/prompt-config';
 
-// Template utilities
-export {
-  getDifficultyDescription,
-  getDifficultyLevel,
-  DIFFICULTY_MAPPING
-} from './templates/shared/difficulty-scaling';
-
-export {
-  checkAnswerDiversity,
-  getAnswerCategories,
-  validateTopicDiversity
-} from './templates/shared/answer-diversity';
-
-export {
-  checkFactualAccuracy,
-  getFactualAccuracyGuidelines,
-  validateFactualAccuracy
-} from './templates/shared/factual-accuracy';
-
-export {
-  checkEngagementFun,
-  getEngagementFunGuidelines,
-  validateEngagementFun
-} from './templates/shared/engagement-fun';
-
-export {
-  checkZeitgeistCulture,
-  getZeitgeistCultureGuidelines,
-  validateZeitgeistCulture
-} from './templates/shared/zeitgeist-culture';
-
-// Prompt builder utilities
-export {
-  buildPrompt,
-  validatePromptConfig
-} from './utils/prompt-builder';
-
-// Version information
-export const PROMPT_SYSTEM_VERSION = '1.0.0';
-export const PROMPT_SYSTEM_DESCRIPTION = 'Modular, versioned, and optimized prompt management system for 10Q Database';
-
-// Quick access functions for common use cases
-export function createQuestionGenerationPrompt(topic: string, count: number = 10) {
-  const { buildQuestionGenerationPrompt } = require('./utils/prompt-builder');
-  return buildQuestionGenerationPrompt(topic, count, 'primary');
+// Simple wrapper functions for common use cases
+export function createQuestionGenerationPrompt(topic: string, count: number = 10): string {
+  const { buildSimpleQuestionPrompt } = require('./config/prompt-config');
+  return buildSimpleQuestionPrompt(topic, count);
 }
 
 export function createQuestionRegenerationPrompt(
@@ -86,22 +19,21 @@ export function createQuestionRegenerationPrompt(
   feedback: string,
   questionIndex: number,
   existingQuestions: string[]
-) {
-  const { buildQuestionRegenerationPrompt } = require('./utils/prompt-builder');
-  return buildQuestionRegenerationPrompt(topic, feedback, questionIndex, existingQuestions, 'primary');
+): string {
+  const { buildSimpleRegenerationPrompt } = require('./config/prompt-config');
+  return buildSimpleRegenerationPrompt(topic, feedback, questionIndex, existingQuestions);
 }
+
+// Version information
+export const PROMPT_SYSTEM_VERSION = '2.0.0';
+export const PROMPT_SYSTEM_DESCRIPTION = 'Simplified, hard-coded prompt system for 10Q Database';
 
 // System health check
 export function getPromptSystemHealth() {
   return {
     version: PROMPT_SYSTEM_VERSION,
     status: 'healthy',
-    components: {
-      types: 'loaded',
-      config: 'loaded',
-      templates: 'loaded',
-      utilities: 'loaded'
-    },
+    description: 'Simplified prompt system',
     timestamp: new Date().toISOString()
   };
 } 

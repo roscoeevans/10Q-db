@@ -1,165 +1,110 @@
-import { geminiAI } from './firebase';
-import type { QuestionUpload } from '../types/questions';
-import { buildQuestionGenerationPrompt, buildQuestionRegenerationPrompt } from '../prompts/utils/prompt-builder';
-import { PROMPT_CONFIG, FALLBACK_CONFIG } from '../prompts/config/prompt-config';
+import { openaiAI } from './openai';
+import type { GeneratedQuestion } from '../types/questions';
+import { buildSimpleQuestionPrompt, buildSimpleRegenerationPrompt } from '../prompts/config/prompt-config';
 
-// Enhanced question generation with new prompt management system
+// Simple question generation with hard-coded prompt
 export async function generateQuestionsWithAI(
   topic: string,
-  count: number = 10,
-  strategy: 'primary' | 'simplified' | 'minimal' | 'legacy' = 'primary'
-): Promise<QuestionUpload[]> {
-  let currentStrategy = strategy;
-  let attempts = 0;
-  const maxAttempts = PROMPT_CONFIG.retryAttempts;
+  count: number = 10
+): Promise<GeneratedQuestion[]> {
+  try {
+    console.log(`🤖 Generating ${count} questions for topic: ${topic}`);
+    
+    // Build simple prompt
+    const prompt = buildSimpleQuestionPrompt(topic, count);
+    
+    console.log(`📝 Using simple prompt (${prompt.length} characters):`, prompt.substring(0, 200) + '...');
 
-  while (attempts < maxAttempts) {
-    try {
-      console.log(`🤖 Generating questions with strategy: ${currentStrategy} (attempt ${attempts + 1}/${maxAttempts})`);
-      
-      // Build prompt using the new prompt management system
-      const builtPrompt = buildQuestionGenerationPrompt(topic, count, currentStrategy);
-      
-      console.log(`📝 Built prompt (${builtPrompt.tokenCount} tokens):`, builtPrompt.content.substring(0, 200) + '...');
-      
-      if (builtPrompt.metadata.warnings.length > 0) {
-        console.warn('⚠️ Prompt warnings:', builtPrompt.metadata.warnings);
-      }
-
-      // Generate content with AI
-      const response = await geminiAI.generateContent(builtPrompt.content);
-      const content = response.text;
-      
-      if (!content) {
-        throw new Error('No content generated from AI');
-      }
-
-      console.log('🤖 Raw AI Response:', content);
-      console.log('📝 Response preview:', content.substring(0, 200) + '...');
-
-      // Clean and parse the JSON response
-      const questions = parseAIResponse(content);
-      
-      // Validate the generated questions
-      const validation = validateGeneratedQuestions(questions, topic);
-      if (validation.isValid) {
-        console.log('✅ Questions generated successfully');
-        return questions;
-      } else {
-        console.warn('⚠️ Question validation failed:', validation.errors);
-        throw new Error(`Question validation failed: ${validation.errors.join(', ')}`);
-      }
-
-    } catch (error) {
-      console.error(`❌ Error with strategy ${currentStrategy}:`, error);
-      attempts++;
-      
-      // Try next fallback strategy
-      if (attempts < maxAttempts) {
-        currentStrategy = getNextFallbackStrategy(currentStrategy);
-        console.log(`🔄 Switching to fallback strategy: ${currentStrategy}`);
-      } else {
-        throw new Error(`Failed to generate questions after ${maxAttempts} attempts with all strategies`);
-      }
+    // Generate content with AI
+    const response = await openaiAI.generateContent(prompt);
+    const content = response.text;
+    
+    if (!content) {
+      throw new Error('No content generated from AI');
     }
-  }
 
-  throw new Error('Failed to generate questions with AI');
+    console.log('🤖 Raw AI Response:', content);
+    console.log('📝 Response preview:', content.substring(0, 200) + '...');
+
+    // Clean and parse the JSON response
+    const questions = parseAIResponse(content);
+    
+    // Validate the generated questions
+    const validation = validateGeneratedQuestions(questions, topic);
+    if (validation.isValid) {
+      console.log('✅ Questions generated successfully');
+      return questions;
+    } else {
+      console.warn('⚠️ Question validation failed:', validation.errors);
+      throw new Error(`Question validation failed: ${validation.errors.join(', ')}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Error generating questions:', error);
+    throw new Error(`Failed to generate questions: ${error}`);
+  }
 }
 
-// Enhanced single question regeneration with new prompt management system
+// Simple single question regeneration
 export async function generateSingleQuestionWithFeedback(
   topic: string,
   feedback: string,
-  existingQuestions: QuestionUpload[],
+  existingQuestions: GeneratedQuestion[],
   questionIndex: number,
-  targetDate: string,
-  strategy: 'primary' | 'simplified' | 'minimal' | 'legacy' = 'primary'
-): Promise<QuestionUpload> {
-  let currentStrategy = strategy;
-  let attempts = 0;
-  const maxAttempts = PROMPT_CONFIG.retryAttempts;
+  targetDate: string
+): Promise<GeneratedQuestion> {
+  try {
+    console.log(`🤖 Regenerating question ${questionIndex} for topic: ${topic}`);
+    
+    // Get existing question texts for context
+    const existingQuestionTexts = existingQuestions.map(q => q.question);
+    
+    // Build simple regeneration prompt
+    const prompt = buildSimpleRegenerationPrompt(
+      topic,
+      feedback,
+      questionIndex,
+      existingQuestionTexts
+    );
+    
+    console.log(`📝 Using simple regeneration prompt (${prompt.length} characters):`, prompt.substring(0, 200) + '...');
 
-  while (attempts < maxAttempts) {
-    try {
-      console.log(`🤖 Regenerating question with strategy: ${currentStrategy} (attempt ${attempts + 1}/${maxAttempts})`);
-      
-      // Get existing question texts for context
-      const existingQuestionTexts = existingQuestions.map(q => q.question);
-      
-      // Build regeneration prompt using the new prompt management system
-      const builtPrompt = buildQuestionRegenerationPrompt(
-        topic,
-        feedback,
-        questionIndex,
-        existingQuestionTexts,
-        currentStrategy
-      );
-      
-      console.log(`📝 Built regeneration prompt (${builtPrompt.tokenCount} tokens):`, builtPrompt.content.substring(0, 200) + '...');
-      
-      if (builtPrompt.metadata.warnings.length > 0) {
-        console.warn('⚠️ Prompt warnings:', builtPrompt.metadata.warnings);
-      }
-
-      // Generate content with AI
-      const response = await geminiAI.generateContent(builtPrompt.content);
-      const content = response.text;
-      
-      if (!content) {
-        throw new Error('No content generated from AI');
-      }
-
-      console.log('🤖 Raw AI Response for regeneration:', content);
-      console.log('📝 Response preview:', content.substring(0, 200) + '...');
-
-      // Clean and parse the JSON response
-      const questions = parseAIResponse(content);
-      
-      if (questions.length === 0) {
-        throw new Error('No questions generated from AI response');
-      }
-      
-      // Return the first (and should be only) question
-      const regeneratedQuestion = questions[0];
-      
-      // Validate the regenerated question
-      const validation = validateSingleQuestion(regeneratedQuestion, topic, existingQuestions);
-      if (validation.isValid) {
-        console.log('✅ Question regenerated successfully');
-        return regeneratedQuestion;
-      } else {
-        console.warn('⚠️ Regenerated question validation failed:', validation.errors);
-        throw new Error(`Question validation failed: ${validation.errors.join(', ')}`);
-      }
-
-    } catch (error) {
-      console.error(`❌ Error regenerating question with strategy ${currentStrategy}:`, error);
-      attempts++;
-      
-      // Try next fallback strategy
-      if (attempts < maxAttempts) {
-        currentStrategy = getNextFallbackStrategy(currentStrategy);
-        console.log(`🔄 Switching to fallback strategy: ${currentStrategy}`);
-      } else {
-        throw new Error(`Failed to regenerate question after ${maxAttempts} attempts with all strategies`);
-      }
+    // Generate content with AI
+    const response = await openaiAI.generateContent(prompt);
+    const content = response.text;
+    
+    if (!content) {
+      throw new Error('No content generated from AI');
     }
+
+    console.log('🤖 Raw AI Response:', content);
+    console.log('📝 Response preview:', content.substring(0, 200) + '...');
+
+    // Clean and parse the JSON response
+    const questions = parseAIResponse(content);
+    
+    if (questions.length === 0) {
+      throw new Error('No questions generated from AI response');
+    }
+
+    // Validate the regenerated question
+    const validation = validateSingleQuestion(questions[0], topic, existingQuestions);
+    if (validation.isValid) {
+      console.log('✅ Question regenerated successfully');
+      return questions[0];
+    } else {
+      console.warn('⚠️ Question validation failed:', validation.errors);
+      throw new Error(`Question validation failed: ${validation.errors.join(', ')}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Error regenerating question:', error);
+    throw new Error(`Failed to regenerate question: ${error}`);
   }
-
-  throw new Error('Failed to regenerate question with AI');
-}
-
-// Helper function to get next fallback strategy
-function getNextFallbackStrategy(currentStrategy: 'primary' | 'simplified' | 'minimal' | 'legacy'): 'primary' | 'simplified' | 'minimal' | 'legacy' {
-  const strategies: ('primary' | 'simplified' | 'minimal' | 'legacy')[] = ['primary', 'simplified', 'minimal', 'legacy'];
-  const currentIndex = strategies.indexOf(currentStrategy);
-  const nextIndex = Math.min(currentIndex + 1, strategies.length - 1);
-  return strategies[nextIndex];
 }
 
 // Parse AI response and clean JSON
-function parseAIResponse(content: string): QuestionUpload[] {
+function parseAIResponse(content: string): GeneratedQuestion[] {
   // Clean the JSON response by removing markdown code blocks
   let cleanedContent = content.trim();
   
@@ -174,7 +119,7 @@ function parseAIResponse(content: string): QuestionUpload[] {
 
   // Parse the JSON response
   try {
-    const questions = JSON.parse(cleanedContent) as QuestionUpload[];
+    const questions = JSON.parse(cleanedContent) as GeneratedQuestion[];
     
     // Ensure it's an array
     if (!Array.isArray(questions)) {
@@ -189,7 +134,7 @@ function parseAIResponse(content: string): QuestionUpload[] {
 }
 
 // Validate generated questions
-function validateGeneratedQuestions(questions: QuestionUpload[], topic: string): { isValid: boolean; errors: string[] } {
+function validateGeneratedQuestions(questions: GeneratedQuestion[], topic: string): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
   if (!Array.isArray(questions)) {
@@ -224,9 +169,9 @@ function validateGeneratedQuestions(questions: QuestionUpload[], topic: string):
 
 // Validate single question
 function validateSingleQuestion(
-  question: QuestionUpload, 
+  question: GeneratedQuestion, 
   topic: string, 
-  existingQuestions: QuestionUpload[]
+  existingQuestions: GeneratedQuestion[]
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   
@@ -293,32 +238,4 @@ function validateQuestionStructure(question: any, index: number): string[] {
   }
   
   return errors;
-}
-
-// Legacy function for backward compatibility
-export async function generateQuestionsWithAILegacy(
-  topic: string,
-  count: number = 10
-): Promise<QuestionUpload[]> {
-  console.warn('⚠️ Using legacy question generation function. Consider migrating to the new prompt management system.');
-  return generateQuestionsWithAI(topic, count, 'legacy');
-}
-
-// Legacy function for backward compatibility
-export async function generateSingleQuestionWithFeedbackLegacy(
-  topic: string,
-  feedback: string,
-  existingQuestions: QuestionUpload[],
-  questionIndex: number,
-  targetDate: string
-): Promise<QuestionUpload> {
-  console.warn('⚠️ Using legacy question regeneration function. Consider migrating to the new prompt management system.');
-  return generateSingleQuestionWithFeedback(topic, feedback, existingQuestions, questionIndex, targetDate, 'legacy');
-}
-
-export {
-  generateQuestionsWithAI,
-  generateSingleQuestionWithFeedback,
-  generateQuestionsWithAILegacy,
-  generateSingleQuestionWithFeedbackLegacy
-}; 
+} 

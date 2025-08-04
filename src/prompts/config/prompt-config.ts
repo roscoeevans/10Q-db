@@ -1,137 +1,90 @@
-import type { PromptConfig, ModelConfig, SafetySettings } from '../types/prompt-types';
+// Simple, hard-coded prompt for question generation
+export const QUESTION_GENERATION_PROMPT = `Given the theme: "{topic}", generate {count} JEOPARDY!-STYLE clues with PROGRESSIVE DIFFICULTY. Each clue must have exactly 3 tags, ordered from broad to specific.
 
-// Main prompt configuration
-export const PROMPT_CONFIG: PromptConfig = {
-  version: '1.0.0',
-  maxTokens: 4000,
-  temperature: 0.7,
-  topP: 0.9,
-  retryAttempts: 3,
-  fallbackStrategies: ['simplified', 'minimal', 'legacy'],
-  modelConfig: {
-    primary: 'gemini-1.5-flash',
-    fallback: 'gemini-1.0-pro',
-    maxOutputTokens: 2000,
-    safetySettings: {
-      harassment: 'BLOCK_MEDIUM_AND_ABOVE',
-      hateSpeech: 'BLOCK_MEDIUM_AND_ABOVE',
-      sexuallyExplicit: 'BLOCK_MEDIUM_AND_ABOVE',
-      dangerousContent: 'BLOCK_MEDIUM_AND_ABOVE'
-    }
+🎯 JEOPARDY! STYLE REQUIREMENTS:
+- Write CLUES, not questions - contestants respond with questions
+- Start with factual statements, end with periods (never question marks)
+- Use "This [person/place/thing]..." format for specificity
+- Keep clues brief and punchy (10-20 words max)
+- Include context hints, dates, or wordplay when possible
+- Tone should be academic but playful, trivia-forward but not dry
+- NEVER include the answer directly in the clue text
+- Provide context clues that lead to the answer, but don't state it
+
+📈 DIFFICULTY PROGRESSION:
+- Question 1: EASY - General knowledge that most people would know
+- Question 2-3: BEGINNER - Basic facts that casual fans might know  
+- Question 4-6: INTERMEDIATE - Requires some knowledge of the topic
+- Question 7-8: ADVANCED - For people well-versed in the subject
+- Question 9: EXPERT - Very challenging, specialist knowledge
+- Question 10: MASTER - Only true experts/enthusiasts would know this
+
+🏷️ Tag Hierarchy:
+- First tag: Very general category (History, Science, Pop Culture, Sports, etc.)
+- Second tag: Sub-topic within the first (American History, Physics, TV Shows, Basketball, etc.)
+- Third tag: Narrow detail or specific angle (Presidential Elections, Newtonian Mechanics, Sitcoms from the 90s, NBA Records, etc.)
+
+⚠️ IMPORTANT: Return ONLY the JSON array, no markdown formatting, no code blocks, no additional text.
+
+Output in JSON format with this exact structure (note: correct answer is ALWAYS first choice):
+[
+  {
+    "question": "This city on the Seine is the capital of France.",
+    "choices": ["Paris", "London", "Berlin", "Madrid"],
+    "answer": "Paris",
+    "tags": ["Geography", "Europe", "Capitals"]
   }
-} as const;
+]`;
 
-// Question generation specific configuration
-export const QUESTION_GENERATION_CONFIG = {
-  DEFAULT_COUNT: 10,
-  MAX_QUESTIONS_PER_BATCH: 20,
-  MIN_QUESTIONS_PER_BATCH: 5,
-  DEFAULT_DIFFICULTY: 3,
-  MAX_DIFFICULTY: 10,
-  MIN_DIFFICULTY: 1,
-  MAX_QUESTION_LENGTH: 200,
-  MIN_QUESTION_LENGTH: 10,
-  MAX_CHOICES: 6,
-  MIN_CHOICES: 2,
-  DEFAULT_CHOICES: 4,
-  MAX_TAGS: 5,
-  MIN_TAGS: 1,
-  DEFAULT_TAGS: 3,
-  MAX_TOPIC_LENGTH: 100,
-  MIN_TOPIC_LENGTH: 3
-} as const;
+// Simple function to build the prompt with variables
+export function buildSimpleQuestionPrompt(topic: string, count: number = 10): string {
+  return QUESTION_GENERATION_PROMPT
+    .replace('{topic}', topic)
+    .replace('{count}', count.toString());
+}
 
-// Prompt template configuration
-export const TEMPLATE_CONFIG = {
-  MAX_TEMPLATE_LENGTH: 5000,
-  MIN_TEMPLATE_LENGTH: 50,
-  MAX_VARIABLES: 20,
-  MAX_CONSTRAINTS: 10,
-  REQUIRED_VARIABLES: ['topic', 'count'],
-  RESERVED_VARIABLES: ['__version__', '__timestamp__', '__user_id__']
-} as const;
+// Simple regeneration prompt
+export const QUESTION_REGENERATION_PROMPT = `Given the theme: "{topic}", I need to regenerate question {questionIndex} (difficulty level {questionIndex}/10) because of this feedback: "{feedback}"
 
-// Validation configuration
-export const VALIDATION_CONFIG = {
-  TOKEN_LIMIT_WARNING_THRESHOLD: 0.8, // 80% of max tokens
-  TOKEN_LIMIT_ERROR_THRESHOLD: 0.95, // 95% of max tokens
-  RESPONSE_TIME_WARNING_THRESHOLD: 30000, // 30 seconds
-  RESPONSE_TIME_ERROR_THRESHOLD: 60000, // 60 seconds
-  MAX_RETRY_DELAY: 5000, // 5 seconds
-  MIN_RETRY_DELAY: 1000, // 1 second
-  EXPONENTIAL_BACKOFF_FACTOR: 2
-} as const;
+{difficulty_description}
 
-// A/B Testing configuration
-export const AB_TESTING_CONFIG = {
-  MIN_SAMPLE_SIZE: 100,
-  CONFIDENCE_LEVEL: 0.95,
-  MIN_DURATION_DAYS: 7,
-  MAX_DURATION_DAYS: 30,
-  DEFAULT_TRAFFIC_SPLIT: 50, // 50/50 split
-  MIN_VARIANT_WEIGHT: 10, // Minimum 10% traffic per variant
-  MAX_VARIANTS: 5
-} as const;
+Here are some other questions from the same quiz for context (to avoid duplicates):
+{existing_questions}
 
-// Analytics configuration
-export const ANALYTICS_CONFIG = {
-  SAMPLE_RATE: 1.0, // 100% of requests
-  BATCH_SIZE: 100,
-  FLUSH_INTERVAL: 60000, // 1 minute
-  RETENTION_DAYS: 90,
-  METRICS_UPDATE_INTERVAL: 300000, // 5 minutes
-  ERROR_SAMPLE_RATE: 1.0 // 100% of errors
-} as const;
+⚠️ CRITICAL: Return ONLY the JSON object, no markdown formatting, no code blocks, no additional text.
 
-// Fallback strategy configuration
-export const FALLBACK_CONFIG = {
-  SIMPLIFIED: {
-    maxTokens: 2000,
-    temperature: 0.5,
-    removeExamples: true,
-    removeConstraints: true
-  },
-  MINIMAL: {
-    maxTokens: 1000,
-    temperature: 0.3,
-    removeExamples: true,
-    removeConstraints: true,
-    removeFormatting: true
-  },
-  LEGACY: {
-    maxTokens: 4000,
-    temperature: 0.7,
-    useOriginalPrompt: true
-  }
-} as const;
+Output in JSON format with this exact structure:
+{
+  "question": "This city on the Seine is the capital of France.",
+  "choices": ["Paris", "London", "Berlin", "Madrid"],
+  "answer": "Paris",
+  "tags": ["Geography", "Europe", "Capitals"]
+}`;
 
-// Error handling configuration
-export const ERROR_CONFIG = {
-  MAX_CONSECUTIVE_FAILURES: 3,
-  CIRCUIT_BREAKER_THRESHOLD: 0.5, // 50% failure rate
-  CIRCUIT_BREAKER_TIMEOUT: 300000, // 5 minutes
-  GRACEFUL_DEGRADATION: true,
-  USER_FRIENDLY_ERRORS: true
-} as const;
+// Simple function to build regeneration prompt
+export function buildSimpleRegenerationPrompt(
+  topic: string,
+  feedback: string,
+  questionIndex: number,
+  existingQuestions: string[]
+): string {
+  const difficultyDescription = `Question ${questionIndex} should be ${getDifficultyDescription(questionIndex)}`;
+  const existingQuestionsText = existingQuestions.map((q, i) => `${i + 1}. "${q}"`).join('\n');
+  
+  return QUESTION_REGENERATION_PROMPT
+    .replace('{topic}', topic)
+    .replace('{feedback}', feedback)
+    .replace('{questionIndex}', questionIndex.toString())
+    .replace('{difficulty_description}', difficultyDescription)
+    .replace('{existing_questions}', existingQuestionsText);
+}
 
-// Performance monitoring configuration
-export const PERFORMANCE_CONFIG = {
-  SLOW_QUERY_THRESHOLD: 10000, // 10 seconds
-  HIGH_TOKEN_USAGE_THRESHOLD: 0.8, // 80% of max tokens
-  LOW_APPROVAL_RATE_THRESHOLD: 0.5, // 50% approval rate
-  HIGH_REGENERATION_RATE_THRESHOLD: 0.3, // 30% regeneration rate
-  ALERT_COOLDOWN: 300000 // 5 minutes between alerts
-} as const;
-
-// Export all configurations
-export {
-  PROMPT_CONFIG,
-  QUESTION_GENERATION_CONFIG,
-  TEMPLATE_CONFIG,
-  VALIDATION_CONFIG,
-  AB_TESTING_CONFIG,
-  ANALYTICS_CONFIG,
-  FALLBACK_CONFIG,
-  ERROR_CONFIG,
-  PERFORMANCE_CONFIG
-}; 
+// Simple difficulty description function
+function getDifficultyDescription(questionIndex: number): string {
+  if (questionIndex === 1) return 'EASY - General knowledge that most people would know';
+  if (questionIndex <= 3) return 'BEGINNER - Basic facts that casual fans might know';
+  if (questionIndex <= 6) return 'INTERMEDIATE - Requires some knowledge of the topic';
+  if (questionIndex <= 8) return 'ADVANCED - For people well-versed in the subject';
+  if (questionIndex === 9) return 'EXPERT - Very challenging, specialist knowledge';
+  return 'MASTER - Only true experts/enthusiasts would know this';
+} 
