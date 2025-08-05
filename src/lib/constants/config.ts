@@ -6,7 +6,7 @@ export const APP_CONFIG = {
   MAX_QUESTIONS_PER_UPLOAD: 10,
   SUPPORTED_DIFFICULTIES: [1, 2, 3, 4, 5],
   DEFAULT_DIFFICULTY: 3,
-  AI_MODEL: 'gemini-1.5-flash',
+  AI_MODEL: 'gpt-4',
   MAX_RETRIES: 3,
   DEBOUNCE_DELAY: 300
 } as const;

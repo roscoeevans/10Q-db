@@ -58,4 +58,4 @@ export const PROMPT_CONFIG = {
     ADVANCED: [6, 7],
     EXPERT: [8, 9]
   }
-} as const; 
+} as const;
