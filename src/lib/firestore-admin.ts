@@ -11,6 +11,7 @@ export interface FirestoreQuestion {
   difficulty: number; // 1-10 scale: 1=easy, 10=expert (based on question position)
   lastUsed: string;
   tags: string[];
+  topic?: string; // Main topic for the question set
 }
 
 export interface QuestionUpload {
@@ -19,6 +20,7 @@ export interface QuestionUpload {
   answer: string;    // Must match choices[0]
   date: string;
   tags: string[];
+  topic?: string; // Main topic for the question set
 }
 
 export interface QuestionStats {
@@ -50,7 +52,8 @@ export class ClientFirestoreService {
   // Upload daily questions (requires proper security rules)
   async uploadDailyQuestions(
     questions: QuestionUpload[], 
-    targetDate: string
+    targetDate: string,
+    topic?: string
   ): Promise<string> {
     try {
       // Validate we have exactly 10 questions
@@ -74,7 +77,8 @@ export class ClientFirestoreService {
           date: targetDate,
           difficulty: index + 1, // Questions 1-10 based on position (1=easy, 10=expert)
           lastUsed: "", // Empty for new questions
-          tags: questionData.tags
+          tags: questionData.tags,
+          topic: topic || questionData.topic || 'General' // Use provided topic or fallback
         };
         
         batch.set(questionDocRef, firestoreQuestion);
@@ -292,8 +296,8 @@ export class ClientFirestoreService {
 export const clientFirestoreService = ClientFirestoreService.getInstance();
 
 // Convenience functions that use the client service
-export const uploadDailyQuestions = (questions: QuestionUpload[], targetDate: string) => 
-  clientFirestoreService.uploadDailyQuestions(questions, targetDate);
+export const uploadDailyQuestions = (questions: QuestionUpload[], targetDate: string, topic?: string) => 
+  clientFirestoreService.uploadDailyQuestions(questions, targetDate, topic);
 
 export const getAllQuestions = () => clientFirestoreService.getAllQuestions();
 export const getQuestionsByDate = (date: string) => clientFirestoreService.getQuestionsByDate(date);

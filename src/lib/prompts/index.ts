@@ -3,9 +3,9 @@
  * Combines templates to create focused, high-quality prompts
  */
 
-import { getBasePrompt } from '../lib/prompts/templates/base-prompt';
-import { getDifficultyScaling } from '../lib/prompts/templates/difficulty-scaling';
-import { getRegenerationPrompt } from '../lib/prompts/templates/regeneration-prompt';
+import { getBasePrompt } from './templates/base-prompt';
+import { getDifficultyScaling } from './templates/difficulty-scaling';
+import { getRegenerationPrompt } from './templates/regeneration-prompt';
 
 /**
  * Generate the main prompt for creating a full set of questions
