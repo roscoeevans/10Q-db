@@ -53,8 +53,8 @@ export default function QuestionUploadFlow() {
       const nextDateString = await findNextAvailableDate();
       setSetupData(prev => ({ ...prev, targetDate: nextDateString }));
       
-      // Parse the date string (MM-DD-YYYY format) to Date object
-      const [month, day, year] = nextDateString.split('-').map(Number);
+      // Parse the date string (YYYY-MM-DD format) to Date object
+      const [year, month, day] = nextDateString.split('-').map(Number);
       const nextDate = new Date(year, month - 1, day);
       setSelectedDate(nextDate);
       setCurrentMonth(new Date(year, month - 1, 1));
@@ -65,10 +65,10 @@ export default function QuestionUploadFlow() {
   };
 
   const formatDateForFirestore = (date: Date): string => {
+    const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}-${day}-${year}`;
+    return `${year}-${month}-${day}`;
   };
 
   const handleDateSelect = (date: Date) => {

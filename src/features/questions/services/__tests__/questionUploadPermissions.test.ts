@@ -51,7 +51,7 @@ describe('Question Upload Permissions', () => {
     question: `Test question ${index + 1}?`,
     choices: [`Answer ${index + 1}`, `Wrong ${index + 1}A`, `Wrong ${index + 1}B`, `Wrong ${index + 1}C`],
     answer: `Answer ${index + 1}`,
-    date: "12-25-2024",
+    date: "2024-12-25",
     tags: [`category${index + 1}`, `subcategory${index + 1}`, `specific${index + 1}`]
   }));
 
@@ -68,6 +68,16 @@ describe('Question Upload Permissions', () => {
     // Mock document references
     vi.mocked(doc).mockReturnValue({} as any);
     vi.mocked(collection).mockReturnValue({} as any);
+
+    // Mock getDocs to return empty snapshot
+    const { getDocs, query, where } = await import('firebase/firestore');
+    vi.mocked(getDocs).mockResolvedValue({
+      docs: [],
+      size: 0,
+      empty: true,
+    } as any);
+    vi.mocked(query).mockReturnValue({} as any);
+    vi.mocked(where).mockReturnValue({} as any);
 
     // Mock auth
     mockCurrentUser = {
@@ -99,9 +109,9 @@ describe('Question Upload Permissions', () => {
       // Mock successful batch commit
       mockBatch.commit.mockResolvedValue(undefined);
 
-      const result = await uploadDailyQuestions(mockQuestions, '12-25-2024');
+      const result = await uploadDailyQuestions(mockQuestions, '2024-12-25');
 
-      expect(result).toBe('Successfully uploaded 2 questions for 12-25-2024');
+      expect(result).toBe('Successfully uploaded 10 questions for 2024-12-25');
       expect(mockBatch.commit).toHaveBeenCalled();
     });
 
@@ -115,7 +125,7 @@ describe('Question Upload Permissions', () => {
       mockBatch.commit.mockRejectedValue(new Error('permission-denied'));
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('Admin access required to upload questions. Please check your permissions.');
     });
 
@@ -129,7 +139,7 @@ describe('Question Upload Permissions', () => {
       mockBatch.commit.mockRejectedValue(new Error('permission-denied'));
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('Admin access required to upload questions. Please check your permissions.');
     });
 
@@ -139,7 +149,7 @@ describe('Question Upload Permissions', () => {
       (auth as any).currentUser = null;
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('Authentication required to access database. Please sign in.');
     });
   });
@@ -151,21 +161,21 @@ describe('Question Upload Permissions', () => {
       });
       mockBatch.commit.mockResolvedValue(undefined);
 
-      await uploadDailyQuestions(mockQuestions, '12-25-2024');
+      await uploadDailyQuestions(mockQuestions, '2024-12-25');
 
       // Verify questions collection documents are created
-      expect(doc).toHaveBeenCalledWith(expect.anything(), 'questions', '12-25-2024-q0');
-      expect(doc).toHaveBeenCalledWith(expect.anything(), 'questions', '12-25-2024-q1');
+      expect(doc).toHaveBeenCalledWith(expect.anything(), 'questions', '2024-12-25-q0');
+      expect(doc).toHaveBeenCalledWith(expect.anything(), 'questions', '2024-12-25-q1');
 
       // Verify batch.set is called for each question
       expect(mockBatch.set).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({
-          id: '12-25-2024-q0',
+          id: '2024-12-25-q0',
           question: mockQuestions[0].question,
           choices: mockQuestions[0].choices,
           answer: mockQuestions[0].answer,
-          date: '12-25-2024',
+          date: '2024-12-25',
           difficulty: 1,
           lastUsed: '',
           tags: mockQuestions[0].tags
@@ -179,7 +189,7 @@ describe('Question Upload Permissions', () => {
       });
       mockBatch.commit.mockResolvedValue(undefined);
 
-      await uploadDailyQuestions(mockQuestions, '12-25-2024');
+      await uploadDailyQuestions(mockQuestions, '2024-12-25');
 
       // Verify tag subcollections are created
       expect(collection).toHaveBeenCalledWith(expect.anything(), 'tags', 'geography', 'questions');
@@ -196,7 +206,7 @@ describe('Question Upload Permissions', () => {
       });
       mockBatch.commit.mockResolvedValue(undefined);
 
-      await uploadDailyQuestions(mockQuestions, '12-25-2024');
+      await uploadDailyQuestions(mockQuestions, '2024-12-25');
 
       // Verify batch operations are used
       expect(writeBatch).toHaveBeenCalled();
@@ -216,7 +226,7 @@ describe('Question Upload Permissions', () => {
       mockBatch.commit.mockRejectedValue(new Error('permission-denied'));
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('Admin access required to upload questions. Please check your permissions.');
     });
 
@@ -227,7 +237,7 @@ describe('Question Upload Permissions', () => {
       mockBatch.commit.mockRejectedValue(new Error('unavailable'));
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('Database temporarily unavailable. Please try again.');
     });
 
@@ -238,7 +248,7 @@ describe('Question Upload Permissions', () => {
       mockBatch.commit.mockRejectedValue(new Error('some-other-firebase-error'));
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
       ).rejects.toThrow('some-other-firebase-error');
     });
   });
@@ -251,7 +261,7 @@ describe('Question Upload Permissions', () => {
 
       // Try to upload with wrong number of questions
       await expect(
-        uploadDailyQuestions([mockQuestions[0]], '12-25-2024')
+        uploadDailyQuestions([mockQuestions[0]], '2024-12-25')
       ).rejects.toThrow('Expected 10 questions, got 1');
 
       // Verify no batch operations were attempted
@@ -265,8 +275,8 @@ describe('Question Upload Permissions', () => {
 
       // Try to upload with invalid date format
       await expect(
-        uploadDailyQuestions(mockQuestions, '2024-12-25')
-      ).rejects.toThrow('Date must be in MM-DD-YYYY format');
+        uploadDailyQuestions(mockQuestions, '12-25-2024')
+      ).rejects.toThrow('Date must be in YYYY-MM-DD format');
 
       // Verify no batch operations were attempted
       expect(writeBatch).not.toHaveBeenCalled();
@@ -282,8 +292,8 @@ describe('Question Upload Permissions', () => {
       vi.mocked(getQuestionsByDate).mockResolvedValue([{ id: 'existing-question' } as any]);
 
       await expect(
-        uploadDailyQuestions(mockQuestions, '12-25-2024')
-      ).rejects.toThrow('Questions already exist for 12-25-2024. Please choose a different date.');
+        uploadDailyQuestions(mockQuestions, '2024-12-25')
+      ).rejects.toThrow('Questions already exist for 2024-12-25. Please choose a different date.');
 
       // Verify no batch operations were attempted
       expect(writeBatch).not.toHaveBeenCalled();
@@ -301,13 +311,13 @@ describe('Question Upload Permissions', () => {
           question: "", // Empty question
           choices: ["Paris", "London", "Berlin", "Madrid"],
           answer: "Paris",
-          date: "12-25-2024",
+          date: "2024-12-25",
           tags: ["geography", "europe", "capitals"]
         }
       ];
 
       await expect(
-        uploadDailyQuestions(invalidQuestions, '12-25-2024')
+        uploadDailyQuestions(invalidQuestions, '2024-12-25')
       ).rejects.toThrow('Question 1: Question text is required');
     });
 
@@ -321,13 +331,13 @@ describe('Question Upload Permissions', () => {
           question: "What is the capital of France?",
           choices: ["London", "Paris", "Berlin", "Madrid"], // Answer not first
           answer: "Paris",
-          date: "12-25-2024",
+          date: "2024-12-25",
           tags: ["geography", "europe", "capitals"]
         }
       ];
 
       await expect(
-        uploadDailyQuestions(invalidQuestions, '12-25-2024')
+        uploadDailyQuestions(invalidQuestions, '2024-12-25')
       ).rejects.toThrow('Question 1: Answer must match the first choice');
     });
 
@@ -341,13 +351,13 @@ describe('Question Upload Permissions', () => {
           question: "What is the capital of France?",
           choices: ["Paris", "London", "Berlin", "Madrid"],
           answer: "Paris",
-          date: "12-25-2024",
+          date: "2024-12-25",
           tags: ["geography"] // Only 1 tag instead of 3
         }
       ];
 
       await expect(
-        uploadDailyQuestions(invalidQuestions, '12-25-2024')
+        uploadDailyQuestions(invalidQuestions, '2024-12-25')
       ).rejects.toThrow('Question 1: Question must have exactly 3 tags (broad → subcategory → specific)');
     });
   });

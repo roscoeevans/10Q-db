@@ -490,9 +490,9 @@ export async function uploadDailyQuestions(
     }
     
     // Validate date format
-    const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(targetDate)) {
-      throw new Error("Date must be in MM-DD-YYYY format");
+      throw new Error("Date must be in YYYY-MM-DD format");
     }
     
     // Check if questions already exist for this date
@@ -581,9 +581,9 @@ export function validateQuestion(question: QuestionUpload): void {
     throw new Error("Question must have 3 unique tags");
   }
   
-  const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(question.date)) {
-    throw new Error("Date must be in MM-DD-YYYY format");
+    throw new Error("Date must be in YYYY-MM-DD format");
   }
 }
 

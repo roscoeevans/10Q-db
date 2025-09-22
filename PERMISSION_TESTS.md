@@ -76,7 +76,7 @@ node scripts/run-permission-tests.js
 
 ### Validation Before Upload
 - ✅ Exactly 10 questions are required
-- ✅ Date format validation (MM-DD-YYYY)
+- ✅ Date format validation (YYYY-MM-DD)
 - ✅ No duplicate questions for the same date
 - ✅ Question structure validation
 - ✅ Answer must match first choice
@@ -166,12 +166,12 @@ Question Upload Permissions
 🛡️  Verifying Firestore Security Rules
 =====================================
 ✅ Found 2 test questions in database
-   Question 12-25-2024-q0:
+   Question 2024-12-25-q0:
      - Question: What is the capital of France?
      - Answer: Paris
      - Difficulty: 1
      - Tags: geography, europe, capitals
-   Question 12-25-2024-q1:
+   Question 2024-12-25-q1:
      - Question: Which planet is closest to the Sun?
      - Answer: Mercury
      - Difficulty: 2

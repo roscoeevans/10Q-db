@@ -43,7 +43,7 @@ const Step1Setup = ({
               checkDateStatus(e.target.value);
             }}
             onClick={handleDateInputClick}
-            placeholder="MM-DD-YYYY"
+            placeholder="YYYY-MM-DD"
             className="ios-input w-full cursor-pointer date-input"
             readOnly
           />

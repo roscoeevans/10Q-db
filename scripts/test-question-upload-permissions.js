@@ -28,7 +28,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Test configuration
-const TEST_DATE = '12-25-2024';
+const TEST_DATE = '2024-12-25';
 const TEST_QUESTIONS = [
   {
     question: "What is the capital of France?",

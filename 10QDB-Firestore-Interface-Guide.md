@@ -39,11 +39,11 @@ export const auth = getAuth(app);
 #### Document Structure
 ```typescript
 interface FirestoreQuestion {
-  id: string;           // Format: "MM-DD-YYYY-qN" (e.g., "05-26-2025-q0")
+  id: string;           // Format: "YYYY-MM-DD-qN" (e.g., "2025-05-26-q0")
   question: string;     // The question text
   choices: string[];    // Array of 4 multiple choice options
   answer: string;       // The correct answer (must match choices[0])
-  date: string;         // Date in "MM-DD-YYYY" format
+  date: string;         // Date in "YYYY-MM-DD" format
   difficulty: number;   // Percentage of users who got it wrong (0.0-100.0)
   lastUsed: string;     // Last date this question was used (empty for new questions)
   tags: string[];       // Array of 1-5 relevant tags
@@ -52,10 +52,10 @@ interface FirestoreQuestion {
 
 #### Document ID Format
 - **Pattern**: `{date}-q{index}`
-- **Example**: `05-26-2025-q0` through `05-26-2025-q9`
+- **Example**: `2025-05-26-q0` through `2025-05-26-q9`
 - **Rules**: 
   - Exactly 10 questions per date (q0 through q9)
-  - Date format: MM-DD-YYYY
+  - Date format: YYYY-MM-DD
   - Questions should increase in difficulty (q0 easiest → q9 hardest)
 
 ### 2. Tags Collection (`tags/{tagName}/questions/{questionId}`)
@@ -159,7 +159,7 @@ function validateQuestion(question: QuestionUpload): void {
   // Check date format
   const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
   if (!dateRegex.test(question.date)) {
-    throw new Error("Date must be in MM-DD-YYYY format");
+    throw new Error("Date must be in YYYY-MM-DD format");
   }
 }
 ```
@@ -317,7 +317,7 @@ function handleUploadError(error: any): UploadError {
 - **Question Quality**: Mix trivia with thought-provoking questions
 
 ### 2. Date Management
-- **Format**: Always use MM-DD-YYYY
+- **Format**: Always use YYYY-MM-DD
 - **Timezone**: Questions go live at 9:00 AM EST
 - **Planning**: Upload questions at least 1 day in advance
 
@@ -340,15 +340,15 @@ const dailyQuestions: QuestionUpload[] = [
     question: "What is the capital of France?",
     choices: ["Paris", "London", "Berlin", "Madrid"],
     answer: "Paris",
-    date: "05-26-2025",
+    date: "2025-05-26",
     tags: ["Geography", "Europe", "Capitals"]
   },
   // ... 9 more questions
 ];
 
 try {
-  const result = await uploadDailyQuestions(dailyQuestions, "05-26-2025");
-  console.log(result); // "Successfully uploaded 10 questions for 05-26-2025"
+  const result = await uploadDailyQuestions(dailyQuestions, "2025-05-26");
+  console.log(result); // "Successfully uploaded 10 questions for 2025-05-26"
 } catch (error) {
   console.error("Upload failed:", error);
 }
