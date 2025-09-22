@@ -1,6 +1,14 @@
 import { Settings, User, LogOut, Shield, Database, Info } from 'lucide-react';
 import type { User as UserType } from '../types/common';
 
+import UserInfo from '../components/debug/UserInfo';
+import TestUpload from '../components/debug/TestUpload';
+import TestPermissions from '../components/debug/TestPermissions';
+import TopicTracker from '../components/debug/TopicTracker';
+import TestTopicTracking from '../components/debug/TestTopicTracking';
+import TestJSONParsing from '../components/debug/TestJSONParsing';
+import QuizCalendar from '../components/debug/QuizCalendar';
+
 interface SettingsPageProps {
   user: UserType | null;
   onSignOut: () => Promise<void>;
@@ -9,6 +17,27 @@ interface SettingsPageProps {
 const SettingsPage = ({ user, onSignOut }: SettingsPageProps) => {
   return (
     <div className="space-y-6">
+      {/* Debug User Info */}
+      <UserInfo />
+      
+      {/* Permission Test */}
+      <TestPermissions />
+      
+      {/* Test Upload Component */}
+      <TestUpload />
+      
+      {/* JSON Parsing Test */}
+      <TestJSONParsing />
+      
+      {/* Quiz Calendar */}
+      <QuizCalendar />
+      
+      {/* Topic Tracker */}
+      <TopicTracker />
+      
+      {/* Topic Tracking Tests */}
+      <TestTopicTracking />
+      
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <Settings className="w-6 h-6 text-ios-blue" />

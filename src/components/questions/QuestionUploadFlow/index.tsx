@@ -218,7 +218,7 @@ export default function QuestionUploadFlow() {
             tags: q.tags
           };
         });
-      await uploadDailyQuestions(approvedQuestionsArray, setupData.targetDate);
+      await uploadDailyQuestions(approvedQuestionsArray, setupData.targetDate, setupData.theme);
       setCurrentStep('success');
     } catch (error) {
       console.error('Error uploading questions:', error);
