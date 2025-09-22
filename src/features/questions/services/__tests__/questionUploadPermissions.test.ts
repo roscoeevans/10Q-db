@@ -273,7 +273,7 @@ describe('Question Upload Permissions', () => {
         claims: { admin: true }
       });
 
-      // Try to upload with invalid date format
+      // Try to upload with invalid date format (old MM-DD-YYYY format)
       await expect(
         uploadDailyQuestions(mockQuestions, '12-25-2024')
       ).rejects.toThrow('Date must be in YYYY-MM-DD format');

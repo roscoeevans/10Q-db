@@ -46,12 +46,12 @@ const TestTopicTracking: React.FC = () => {
         question: `Test question ${i + 1} about World History`,
         choices: ['Correct Answer', 'Wrong Answer 1', 'Wrong Answer 2', 'Wrong Answer 3'],
         answer: 'Correct Answer',
-        date: '12-25-2024',
+        date: '2024-12-25',
         tags: ['History', 'World', 'Test'],
         topic: 'World History'
       }));
 
-      const result = await uploadDailyQuestions(testQuestions, '12-25-2024', 'World History');
+      const result = await uploadDailyQuestions(testQuestions, '2024-12-25', 'World History');
       addResult(`✅ Upload successful: ${result}`);
     } catch (error) {
       addResult(`❌ Error uploading with topic: ${error instanceof Error ? error.message : 'Unknown error'}`);
