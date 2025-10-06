@@ -28,6 +28,12 @@ Regenerate question ${questionIndex + 1} for topic: "${topic}"
 - Correct answer must be FIRST choice
 - Make the clue engaging and fun
 
+🚨 CRITICAL: QUESTION MUST BE STANDALONE
+- NEVER use pronouns like "he", "she", "it", "they", "this person", "her", "his", "their"
+- ALWAYS use the full name or specific identifier
+- Question should be completely understandable without reading other questions
+- If the topic is a person, use their full name in the question
+
 📋 CONTEXT (other questions to avoid duplicates):
 ${otherQuestions}
 

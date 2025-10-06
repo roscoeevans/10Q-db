@@ -39,7 +39,7 @@ export class ClientFirestoreService {
   private static instance: ClientFirestoreService;
 
   private constructor() {
-    console.log('✅ Client Firestore service initialized');
+    // Client Firestore service initialized
   }
 
   static getInstance(): ClientFirestoreService {
@@ -91,7 +91,7 @@ export class ClientFirestoreService {
       });
       
       await batch.commit();
-      console.log(`✅ Successfully uploaded ${questions.length} questions for ${targetDate} using client SDK`);
+      // Successfully uploaded questions
       return `Successfully uploaded ${questions.length} questions for ${targetDate}`;
     } catch (error) {
       console.error("❌ Error uploading questions with client SDK:", error);
@@ -102,13 +102,10 @@ export class ClientFirestoreService {
   // Get all questions (requires read permission)
   async getAllQuestions(): Promise<FirestoreQuestion[]> {
     try {
-      console.log('🔍 Fetching all questions with client SDK...');
-      
       const questionsRef = collection(db, 'questions');
       const q = query(questionsRef, orderBy('date', 'desc'));
       const snapshot = await getDocs(q);
       
-      console.log(`✅ Found ${snapshot.docs.length} questions using client SDK`);
       return snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
     } catch (error) {
       console.error('❌ Error fetching all questions with client SDK:', error);
@@ -245,11 +242,10 @@ export class ClientFirestoreService {
       
       // Check the next 365 days for availability
       for (let i = 0; i < 365; i++) {
-        const dateStr = checkDate.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: 'numeric'
-        }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
+        const year = checkDate.getFullYear();
+        const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+        const day = String(checkDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
         
         const { available } = await this.checkDateAvailability(dateStr);
         if (available) {
@@ -259,21 +255,22 @@ export class ClientFirestoreService {
         checkDate.setDate(checkDate.getDate() + 1);
       }
       
-      // If no available date found, return today's date
-      return start.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
+      // If no available date found, return tomorrow's date
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     } catch (error) {
       console.error('❌ Error finding next available date with client SDK:', error);
-      // Fallback to today's date if there's an error
-      const today = new Date().toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      }).replace(/(\d+)\/(\d+)\/(\d+)/, '$1-$2-$3');
-      return today;
+      // Fallback to tomorrow's date if there's an error
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const year = tomorrow.getFullYear();
+      const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const day = String(tomorrow.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   }
 

@@ -1,40 +1,313 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isLeagueMember(leagueId) {
+      // Check if user is a member of the league by looking at the league document
+      return exists(/databases/$(database)/documents/leagues/$(leagueId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.members;
+    }
+
+    // 🎯 Core Identity & Scoring System (Anonymous + Authenticated Users)
+    
+    // PRIVATE user doc: owner only (no public reads)
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+      
+      // Per-quiz score snapshots
+      match /scores/{quizId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // User league memberships subcollection
+      match /leagues/{leagueId} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+
+      // Quiz completion tracking and individual question responses
+      match /qotd/{date} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+        
+        // Individual answer responses for each question
+        match /responses/{questionId} {
+          allow read, write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+
+      // Personal stats system - owner read only, Functions write only
+      match /stats/{document=**} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false; // Admin/Functions only
+      }
+    }
+
+    // PUBLIC user projection: world-readable, owner-controlled writes
+    match /publicUsers/{uid} {
+      allow read: if true;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+
+        // Only allow the whitelisted public fields
+        && request.resource.data.keys().hasOnly(
+            ['handle','displayHandle','displayName','avatarUrl','bio','handleChangedAt','reserved']
+           )
+
+        // Types
+        && (request.resource.data.handle is string)
+        && (!('displayHandle' in request.resource.data) || request.resource.data.displayHandle is string)
+        && (!('displayName' in request.resource.data) || request.resource.data.displayName is string)
+        && (!('avatarUrl' in request.resource.data) || request.resource.data.avatarUrl is string)
+        && (!('bio' in request.resource.data) || request.resource.data.bio is string)
+
+        // Normalized handle shape (3–20, lowercase, -, ., _ allowed; must start/end [a-z0-9_])
+        && request.resource.data.handle.matches('^[a-z0-9_][a-z0-9_\\.-]{1,18}[a-z0-9_]$');
+
+      // Optional: only the owner can delete their public projection
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // One attempt per UTC day per participant (anon or authed)
+    match /userScores/{uid}/daily/{date} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      // Create only if it doesn't exist yet (enforces "one attempt/day" at rules layer)
+      allow create: if isOwner() &&
+                     !exists(/databases/$(database)/documents/userScores/$(uid)/daily/$(date));
+      // Allow read/update of your own record (e.g., attach metadata immediately after create)
+      allow read, update: if isOwner();
+      allow delete: if false;
+    }
+
+    // Public leaderboard entries: user publishes their own result
+    match /dailyLeaderboards/{date}/entries/{uid} {
+      allow read: if true; // public
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Canonical quiz for UTC "today" is server-authored content
+    match /dailyQuiz/{date} {
+      allow read: if true;           // anyone can fetch today's quiz
+      allow write: if false;         // clients never write quizzes
+    }
+
+    // 🎯 Supporting Collections
+
+    // Daily quiz content is read-only to users (contains questionIds)
+    match /quizzes/{quizId} {
+      allow read: if true;
+      
+      // User submissions for admin visibility (optional)
+      match /userSubmissions/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.token.admin == true;
+      }
+    }
+
     // Questions collection - read for authenticated users, write for admin users
     match /questions/{questionId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'roscoe_evans@icloud.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Individual question response saving
       match /responses/{userId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
-    
+
     // Tags collection - read for authenticated users, write for admin users
     match /tags/{tagName} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'roscoe_evans@icloud.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       
       // Tag questions subcollection
       match /questions/{questionId} {
         allow read: if request.auth != null;
         allow write: if request.auth != null && 
           (request.auth.token.admin == true || 
-           request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
+           request.auth.token.email in ['roscoeevans@gmail.com', 'roscoe_evans@icloud.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
       }
     }
-    
+
     // Admin users collection - read/write for admin users only
     match /admin_users/{email} {
       allow read, write: if request.auth != null && 
         (request.auth.token.admin == true || 
-         request.auth.token.email in ['roscoeevans@gmail.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
+         request.auth.token.email in ['roscoeevans@gmail.com', 'roscoe_evans@icloud.com', 'admin@10q.com', 'riley.c.evans@gmail.com']);
+    }
+
+    // Question feedback collection - voting system
+    match /questionFeedback/{questionId} {
+      match /votes/{userId} {
+        allow read: if request.auth != null; // allow user to see their vote
+        allow create, update, delete: if request.auth != null && request.auth.uid == userId &&
+          (request.resource.data.keys().hasOnly(['vote', 'quizId', 'source', 'updatedAt']) ||
+           request.method == 'delete') &&
+          (request.resource.data.vote in ['up', 'down']);
+      }
+      match /stats/{date} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
+    // HANDLE registry: public read, strictly controlled writes
+    match /handles/{handle} {
+      allow read: if true;
+
+      // Claim a handle if it doesn't exist and you're binding it to yourself
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid','createdAt','displayHandle'])
+        && request.resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/handles/$(handle))
+
+        // Enforce normalized handle on the doc ID
+        && handle.matches('^[a-z0-9_][a-z0-9_\\.-]{1,18}[a-z0-9_]$');
+
+      // Release a handle: only the owner may delete
+      allow delete: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+
+      // No direct updates (delete + create flow only)
+      allow update: if false;
+    }
+
+    // Legacy userStats collection removed - replaced with new personal stats system
+
+    // Global leaderboard data (read-only for all authenticated users)
+    match /globalLeaderboard/{monthKey} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only system can write
+    }
+
+    // League statistics (read-only for authenticated users)
+    match /leagueStats/{statsId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only system can write
+    }
+
+    // System collections - allow users to create tasks for themselves
+    match /aggregateUpdateTasks/{taskId} {
+      allow read: if false; // Only functions can read
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid; // Users can create tasks for themselves
+      allow update, delete: if false; // Only functions can update/delete
+    }
+
+    match /aggregateMigrations/{migrationId} {
+      allow read, write: if false; // Only functions can access
+    }
+
+    // NEW WINDOWED LEADERBOARD SYSTEM
+    // Public read access for global leaderboards
+    match /leaderboards/global/windows/{window}/periods/{periodId}/entries/{uid} {
+      allow read: if true;
+      allow write: if false; // Functions(Admin) only
+    }
+
+    // League leaderboards - members only (corrected path structure)
+    match /leaderboards/{leagueId}/windows/{window}/periods/{periodId}/entries/{uid} {
+      allow read: if isSignedIn() && isLeagueMember(leagueId);
+      allow write: if false; // Functions(Admin) only
+    }
+
+    // Idempotence seen docs - Functions only
+    match /leaderboards/_seen/{seenId} {
+      allow read, write: if false; // Functions(Admin) only
+    }
+
+    // Public global history snapshots
+    match /leaderboardHistory/global/windows/{win}/periods/{pid} {
+      allow read: if true;
+      allow write: if false; // Functions(Admin) only
+    }
+
+    // League history gated by membership  
+    match /leaderboardHistory/{leagueId}/windows/{win}/periods/{pid} {
+      allow read: if isSignedIn() && isLeagueMember(leagueId);
+      allow write: if false; // Functions(Admin) only
+    }
+
+    // LEGACY LEADERBOARD PATHS COMPLETELY REMOVED
+    // All leaderboard data now uses windowed system above
+
+    // Leagues - updated to match new schema specification
+    match /leagues/{leagueId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        // Admins can update anything
+        (request.auth.uid == resource.data.createdBy || 
+         request.auth.uid in resource.data.get('adminIds', [])) ||
+        // OR users can add themselves to members (for joining)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'updatedAt']) &&
+         request.resource.data.members.hasAll(resource.data.members) &&
+         request.resource.data.members.hasAny([request.auth.uid]) &&
+         !resource.data.members.hasAny([request.auth.uid]))
+      );
+      allow delete: if false; // No deletion allowed for now
+
+      // League scores subcollection - support both legacy (memberIds) and new (members) schemas
+      match /scores/{userId} {
+        allow read: if request.auth != null && 
+          (request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('memberIds', []) ||
+           request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('members', []));
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // League invites subcollection - new Discord-style invite system
+      match /invites/{inviteId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && 
+          (request.auth.uid == get(/databases/$(database)/documents/leagues/$(leagueId)).data.createdBy ||
+           request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('adminIds', []));
+        allow update: if request.auth != null && (
+          // Invite creator or admin can update anything
+          (request.auth.uid == resource.data.createdBy ||
+           request.auth.uid in get(/databases/$(database)/documents/leagues/$(leagueId)).data.get('adminIds', [])) ||
+          // OR any authenticated user can increment usage count (for accepting invites)
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uses']) &&
+           request.resource.data.uses == resource.data.uses + 1)
+        );
+        allow delete: if false;
+      }
+    }
+
+    // Collection group rule for invites - allows reading invites across all leagues
+    match /{path=**}/invites/{inviteId} {
+      allow read: if request.auth != null;
+    }
+
+    // Quiz statistics (read-only for users, write only by Cloud Functions)
+    match /quizStats/{quizId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Global leaderboards (monthly, yearly, all-time)
+    match /leaderboards/{timeframe}/users/{userId} {
+      allow read: if true; // Anyone can read leaderboards
+      allow write: if request.auth != null && request.auth.uid == userId &&
+                     request.resource.data.keys().hasOnly([
+                       'score', 'displayName', 'handle', 'photoURL', 'lastUpdated', 'gamesPlayed'
+                     ]);
+    }
+
+    // Handle operation logs (optional - for debugging handle operations)
+    match /logs/handleChanges/{logId} {
+      allow read: if request.auth != null && request.auth.token.admin == true; // Only admins can read logs
+      allow write: if request.auth != null; // Authenticated users can write logs
     }
   }
 } 

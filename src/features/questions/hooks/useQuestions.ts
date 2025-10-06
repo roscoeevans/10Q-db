@@ -63,7 +63,7 @@ export function useQuestions(): UseQuestionsReturn {
       setError(message);
       errorHandler.handle(error as Error);
     }
-  }, [setLoading, setError]);
+  }, []);
 
   const searchQuestions = useCallback(async (query: QuestionSearchQuery): Promise<FirestoreQuestion[]> => {
     try {
@@ -77,7 +77,7 @@ export function useQuestions(): UseQuestionsReturn {
       errorHandler.handle(error as Error);
       return [];
     }
-  }, [setLoading, setError]);
+  }, []);
 
   const createQuestion = useCallback(async (data: CreateQuestionData): Promise<FirestoreQuestion> => {
     try {
@@ -94,7 +94,7 @@ export function useQuestions(): UseQuestionsReturn {
       errorHandler.handle(error as Error);
       throw error;
     }
-  }, [setLoading, setError, refreshQuestions]);
+  }, [refreshQuestions]);
 
   const updateQuestion = useCallback(async (id: string, updates: Partial<FirestoreQuestion>): Promise<FirestoreQuestion> => {
     try {
@@ -117,7 +117,7 @@ export function useQuestions(): UseQuestionsReturn {
       errorHandler.handle(error as Error);
       throw error;
     }
-  }, [setLoading, setError]);
+  }, []);
 
   const deleteQuestion = useCallback(async (id: string): Promise<void> => {
     try {
@@ -136,7 +136,7 @@ export function useQuestions(): UseQuestionsReturn {
       errorHandler.handle(error as Error);
       throw error;
     }
-  }, [setLoading, setError]);
+  }, []);
 
   const getQuestionById = useCallback(async (id: string): Promise<FirestoreQuestion | null> => {
     try {
@@ -147,7 +147,7 @@ export function useQuestions(): UseQuestionsReturn {
       errorHandler.handle(error as Error);
       return null;
     }
-  }, [setError]);
+  }, []);
 
   // Load questions on mount
   useEffect(() => {

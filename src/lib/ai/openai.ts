@@ -13,22 +13,22 @@ interface OpenAIResponse {
 }
 
 export const openaiAI = {
-  generateContent: async (prompt: string): Promise<OpenAIResponse> => {
+  generateContent: async (prompt: string, model: string = 'gpt-5'): Promise<OpenAIResponse> => {
     try {
-      console.log('🤖 Generating with OpenAI GPT-4o...');
+      console.log(`🤖 Generating with OpenAI ${model}...`);
       console.log('📝 Prompt length:', prompt.length, 'characters');
       
       // Try multiple ways to get the API key
       let apiKey = null;
       
-      // Try Vite environment (browser context)
+      // Try Vite environment (browser context) - check both variable names
       if (typeof import.meta !== 'undefined' && import.meta.env) {
-        apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        apiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
       }
       
-      // Try Node.js environment
+      // Try Node.js environment - check both variable names
       if (!apiKey && typeof process !== 'undefined' && process.env) {
-        apiKey = process.env.VITE_OPENAI_API_KEY;
+        apiKey = process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
       }
       
       if (!apiKey) {
@@ -45,7 +45,7 @@ export const openaiAI = {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: model,
           messages: [
             {
               role: 'system',
@@ -56,11 +56,19 @@ export const openaiAI = {
               content: prompt
             }
           ],
-          temperature: 0.7,
-          max_tokens: 4000,
-          top_p: 1,
-          frequency_penalty: 0,
-          presence_penalty: 0
+          ...(model === 'gpt-5' ? {
+            // GPT-5 specific parameters - increase tokens to account for reasoning
+            max_completion_tokens: 8000,
+            reasoning_effort: 'low',  // Use less reasoning to save tokens for content
+            verbosity: 'low'          // Use less verbose responses
+          } : {
+            // GPT-4o and other models
+            temperature: 0.7,
+            max_tokens: 4000,
+            top_p: 1,
+            frequency_penalty: 0,
+            presence_penalty: 0
+          })
         })
       });
 
@@ -85,10 +93,16 @@ export const openaiAI = {
       const text = data.choices[0]?.message?.content;
       
       if (!text) {
+        // Check if it's a token limit issue
+        const finishReason = data.choices[0]?.finish_reason;
+        if (finishReason === 'length') {
+          throw new Error('GPT-5 response was cut off due to token limit. All tokens were used for reasoning. Try reducing prompt length or using GPT-4o instead.');
+        }
+        console.error('❌ No content in response. Full response:', data);
         throw new Error('No content received from OpenAI API');
       }
 
-      console.log('✅ OpenAI GPT-4o response received');
+      console.log(`✅ OpenAI ${model} response received`);
       console.log('📝 Response length:', text.length, 'characters');
       console.log('💰 Token usage:', data.usage);
 

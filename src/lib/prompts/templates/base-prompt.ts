@@ -14,6 +14,9 @@ Generate ${count} Jeopardy!-style clues for the topic: "${topic}"
 - Keep clues concise (10-20 words)
 - Make clues engaging and fun, not dry
 
+🚨 CRITICAL: EACH QUESTION MUST BE STANDALONE
+- Although each set of questions will have a theme, each one must be understandable in isolation. Never assume that the user has context from previous questions. This is in case we ever want to dynamically generate new quizzes that didn't come from the same set, but share a common tag.
+
 🚨 CRITICAL ACCURACY REQUIREMENTS:
 - Every fact must be 100% accurate
 - Double-check dates, names, and details
@@ -25,6 +28,10 @@ Generate ${count} Jeopardy!-style clues for the topic: "${topic}"
 - "This city on the Seine is the capital of France." → What is Paris?
 - "This Norse god wields a hammer named Mjolnir." → Who is Thor?
 - "This 1969 event saw Neil Armstrong take one small step." → What is the Moon landing?
+
+✅ STANDALONE QUESTION EXAMPLES (for topic "Taylor Swift"):
+- "This country music singer-turned-pop star released the album '1989' in 2014." → Who is Taylor Swift?
+- "Taylor Swift's 2020 album recorded during the pandemic shares its name with this type of vegetation." → What is Folklore?
 
 ❌ WRONG FORMAT (NEVER DO THIS):
 - "What is the capital of France?" (WRONG - direct question)

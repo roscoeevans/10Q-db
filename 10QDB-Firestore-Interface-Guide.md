@@ -157,7 +157,7 @@ function validateQuestion(question: QuestionUpload): void {
   }
   
   // Check date format
-  const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRegex.test(question.date)) {
     throw new Error("Date must be in YYYY-MM-DD format");
   }

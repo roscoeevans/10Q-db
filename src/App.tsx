@@ -16,9 +16,7 @@ function App() {
   const { questions, stats, loading: questionsLoading, error: questionsError } = useQuestions();
   const [activeTab, setActiveTab] = useState<Tab>('upload'); // Default to upload tab
 
-  // Add some debugging for database connection
-  console.log('Firebase config check - Project ID:', 'q-production-e4848');
-  console.log('✅ Using client-side Firebase SDK for authentication and permissions');
+  // Firebase is configured and ready
 
   const renderTabContent = () => {
     switch (activeTab) {

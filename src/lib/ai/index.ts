@@ -7,7 +7,7 @@
 import { openaiAI } from './openai';
 import { geminiAI } from '../firebase';
 
-export type AIModel = 'gpt-4o' | 'gemini-1.5-flash' | 'gemini-1.5-pro';
+export type AIModel = 'gpt-5' | 'gpt-4o' | 'gemini-2.0-flash-thinking-exp' | 'gemini-1.5-pro';
 
 export interface AIResponse {
   text: string;
@@ -20,39 +20,46 @@ export interface AIResponse {
 }
 
 class AIService {
-  private defaultModel: AIModel = 'gpt-4o';
+  private defaultModel: AIModel = 'gpt-5';
 
   constructor() {
-    // Check if OpenAI API key is available
-    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    // Check if OpenAI API key is available (try both env variable names)
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
     if (!openaiKey) {
       console.warn('⚠️ OpenAI API key not found, falling back to Gemini');
-      this.defaultModel = 'gemini-1.5-flash';
+      this.defaultModel = 'gemini-2.0-flash-thinking-exp';
     }
   }
 
   async generateContent(
-    prompt: string, 
+    prompt: string,
     model: AIModel = this.defaultModel
   ): Promise<AIResponse> {
-    console.log(`🤖 Using AI model: ${model}`);
     
     try {
       switch (model) {
+        case 'gpt-5':
+          const gpt5Response = await openaiAI.generateContent(prompt, 'gpt-5');
+          return {
+            text: gpt5Response.text,
+            model: 'gpt-5',
+            usage: gpt5Response.usage
+          };
+          
         case 'gpt-4o':
-          const openaiResponse = await openaiAI.generateContent(prompt);
+          const openaiResponse = await openaiAI.generateContent(prompt, 'gpt-4o');
           return {
             text: openaiResponse.text,
             model: 'gpt-4o',
             usage: openaiResponse.usage
           };
           
-        case 'gemini-1.5-flash':
+        case 'gemini-2.0-flash-thinking-exp':
         case 'gemini-1.5-pro':
           const geminiResponse = await geminiAI.generateContent(prompt);
           return {
             text: geminiResponse.text,
-            model: model as 'gemini-1.5-flash' | 'gemini-1.5-pro'
+            model: model as 'gemini-2.0-flash-thinking-exp' | 'gemini-1.5-pro'
           };
           
         default:
@@ -61,10 +68,9 @@ class AIService {
     } catch (error) {
       console.error(`❌ Error with ${model}:`, error);
       
-      // Fallback to Gemini if OpenAI fails
-      if (model === 'gpt-4o' && this.defaultModel !== 'gemini-1.5-flash') {
-        console.log('🔄 Falling back to Gemini due to OpenAI error');
-        return this.generateContent(prompt, 'gemini-1.5-flash');
+      // Fallback logic for OpenAI models
+      if ((model === 'gpt-5' || model === 'gpt-4o') && this.defaultModel !== 'gemini-2.0-flash-thinking-exp') {
+        return this.generateContent(prompt, 'gemini-2.0-flash-thinking-exp');
       }
       
       throw error;
@@ -75,12 +81,14 @@ class AIService {
   getAvailableModels(): AIModel[] {
     const models: AIModel[] = [];
     
-    if (import.meta.env.VITE_OPENAI_API_KEY) {
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
+    if (openaiKey) {
+      models.push('gpt-5');
       models.push('gpt-4o');
     }
     
     // Gemini is always available through Firebase
-    models.push('gemini-1.5-flash');
+    models.push('gemini-2.0-flash-thinking-exp');
     models.push('gemini-1.5-pro');
     
     return models;
@@ -94,7 +102,6 @@ class AIService {
   // Set the default model
   setDefaultModel(model: AIModel) {
     this.defaultModel = model;
-    console.log(`🎯 Default AI model set to: ${model}`);
   }
 }
 

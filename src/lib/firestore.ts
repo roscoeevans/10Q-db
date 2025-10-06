@@ -1,7 +1,6 @@
 import { auth, db } from './firebase';
 import { aiService } from './ai';
 import { generateMainPrompt, generateRegenerationPrompt } from './prompts';
-import { getAllQuestions } from './firestore-admin';
 import { 
   collection, 
   doc, 
@@ -17,7 +16,7 @@ export async function ensureAuthenticated(): Promise<void> {
   if (!auth.currentUser) {
     throw new Error('Authentication required to access database. Please sign in.');
   }
-  console.log('User authenticated:', auth.currentUser.email);
+  // User authenticated
 }
 
 // Types
@@ -115,10 +114,7 @@ export async function generateQuestionsWithAI(
     // Use the new modular prompt system
     const prompt = generateMainPrompt(topic, count);
     
-    console.log('🤖 Generating questions with unified AI service...');
-    console.log('📝 Prompt length:', prompt.length, 'characters');
-    console.log('🎯 Topic:', topic);
-    console.log('📊 Question count:', count);
+    // Generating questions with AI service
 
     const response = await aiService.generateContent(prompt);
     const content = response.text;
@@ -127,10 +123,7 @@ export async function generateQuestionsWithAI(
       throw new Error('No content generated from AI');
     }
 
-    console.log('✅ AI response received');
-    console.log('🤖 Model used:', response.model);
-    console.log('📝 Response length:', content.length, 'characters');
-    console.log('📋 Response preview:', content.substring(0, 200) + '...');
+    // AI response received
 
     // Enhanced JSON cleaning and parsing
     let cleanedContent = content.trim();
@@ -232,7 +225,7 @@ export async function generateQuestionsWithAI(
         }
       });
       
-      console.log(`✅ Successfully generated ${questions.length} questions with ${response.model}`);
+      // Successfully generated questions
       return questions;
       
     } catch (parseError) {

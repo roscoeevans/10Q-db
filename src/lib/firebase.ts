@@ -18,7 +18,7 @@ export const geminiAI = {
       
       // Create a Gemini model instance (using Gemini Developer API by default)
       // Firebase manages the API keys and authentication automatically
-      const model = getGenerativeModel(ai, { model: "gemini-1.5-flash" });
+      const model = getGenerativeModel(ai, { model: "gemini-2.0-flash-thinking-exp" });
       
       // Generate content
       const result = await model.generateContent(prompt);
