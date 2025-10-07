@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY,
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
 
 // OpenAI integration for question generation
@@ -47,7 +47,7 @@ export const openaiAI = {
         if (error.message.includes('API key') || error.message.includes('authentication')) {
           throw new Error(
             'OpenAI API key issue. Please:\n' +
-            '1. Check your .env.local file has OPENAI_API_KEY\n' +
+            '1. Check your .env.local file has VITE_OPENAI_API_KEY\n' +
             '2. Verify the API key is valid\n' +
             '3. Ensure you have sufficient credits'
           );

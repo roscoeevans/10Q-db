@@ -161,6 +161,7 @@ export default function QuestionUploadFlow() {
 
     setGenerating(true);
     setError('');
+    setCurrentStep(2); // Move to loading screen immediately
     
     try {
       const questions = await generateQuestionsWithAI(setupData.theme);
@@ -171,10 +172,10 @@ export default function QuestionUploadFlow() {
       setGeneratedQuestions(generatedQuestions);
       setCurrentQuestionIndex(0);
       setApprovedQuestions(new Set());
-      setCurrentStep(2);
     } catch (error) {
       console.error('Error generating questions:', error);
       setError('Failed to generate questions. Please try again.');
+      setCurrentStep(1); // Go back to step 1 on error
     } finally {
       setGenerating(false);
     }
@@ -350,7 +351,6 @@ export default function QuestionUploadFlow() {
             showCalendar={showCalendar}
             setShowCalendar={setShowCalendar}
             selectedDate={selectedDate}
-            generating={generating}
             handleDateInputClick={handleDateInputClick}
             handleGenerateQuestions={handleGenerateQuestions}
             checkDateStatus={checkDateStatus}

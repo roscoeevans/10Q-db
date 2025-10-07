@@ -11,7 +11,6 @@ const Step1Setup = ({
   showCalendar, 
   setShowCalendar,
   selectedDate,
-  generating,
   handleDateInputClick,
   handleGenerateQuestions,
   checkDateStatus,
@@ -167,20 +166,11 @@ const Step1Setup = ({
 
       <button
         onClick={handleGenerateQuestions}
-        disabled={!setupData.targetDate || !setupData.theme.trim() || generating}
+        disabled={!setupData.targetDate || !setupData.theme.trim()}
         className="ios-button w-full flex items-center justify-center gap-2"
       >
-        {generating ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Generating Questions...
-          </>
-        ) : (
-          <>
-            <Brain className="w-4 h-4" />
-            Generate Questions
-          </>
-        )}
+        <Brain className="w-4 h-4" />
+        Generate Questions
       </button>
     </div>
   </div>

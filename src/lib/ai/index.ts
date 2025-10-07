@@ -23,8 +23,8 @@ class AIService {
   private defaultModel: AIModel = 'gpt-5';
 
   constructor() {
-    // Check if OpenAI API key is available (try both env variable names)
-    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
+    // Check if OpenAI API key is available
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (!openaiKey) {
       console.warn('⚠️ OpenAI API key not found, falling back to Gemini');
       this.defaultModel = 'gemini-2.0-flash-thinking-exp';
@@ -81,7 +81,7 @@ class AIService {
   getAvailableModels(): AIModel[] {
     const models: AIModel[] = [];
     
-    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
     if (openaiKey) {
       models.push('gpt-5');
       models.push('gpt-4o');

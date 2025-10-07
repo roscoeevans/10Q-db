@@ -18,18 +18,8 @@ export const openaiAI = {
       console.log(`🤖 Generating with OpenAI ${model}...`);
       console.log('📝 Prompt length:', prompt.length, 'characters');
       
-      // Try multiple ways to get the API key
-      let apiKey = null;
-      
-      // Try Vite environment (browser context) - check both variable names
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
-        apiKey = import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.OPENAI_API_KEY;
-      }
-      
-      // Try Node.js environment - check both variable names
-      if (!apiKey && typeof process !== 'undefined' && process.env) {
-        apiKey = process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-      }
+      // Get the API key from Vite environment
+      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       
       if (!apiKey) {
         throw new Error(

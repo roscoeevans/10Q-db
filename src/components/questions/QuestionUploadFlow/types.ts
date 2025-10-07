@@ -15,7 +15,6 @@ export interface Step1SetupProps {
   showCalendar: boolean;
   setShowCalendar: (show: boolean) => void;
   selectedDate: Date | null;
-  generating: boolean;
   handleDateInputClick: () => void;
   handleGenerateQuestions: () => void;
   checkDateStatus: (date: string) => void;
